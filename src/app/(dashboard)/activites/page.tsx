@@ -90,11 +90,11 @@ export default async function ActivitiesPage() {
                         </div>
                       </div>
                       <div className="flex gap-4 text-sm">
-                        <span className="flex items-center gap-1 text-green-600">
+                        <span className="flex items-center gap-1 text-[#2980B9]">
                           <Users className="h-4 w-4" />
                           {activity._count.attendances}
                         </span>
-                        <span className="flex items-center gap-1 text-purple-600">
+                        <span className="flex items-center gap-1 text-[#D4A017]">
                           <MessageSquare className="h-4 w-4" />
                           {activity._count.feedbacks}
                         </span>

@@ -38,7 +38,7 @@ function StarRating({ rating }: { rating: number }) {
           key={star}
           className={`h-4 w-4 ${
             star <= rating
-              ? "fill-yellow-400 text-yellow-400"
+              ? "fill-[#D4A017] text-[#D4A017]"
               : "text-gray-200"
           }`}
         />
@@ -64,7 +64,7 @@ export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps
             <CardContent className="pt-4 text-center">
               <p className="text-sm text-muted-foreground">Note globale</p>
               <div className="flex items-center justify-center gap-1 mt-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
                 <span className="font-bold">{stats.avgOverall}</span>
               </div>
             </CardContent>
@@ -73,7 +73,7 @@ export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps
             <CardContent className="pt-4 text-center">
               <p className="text-sm text-muted-foreground">Contenu</p>
               <div className="flex items-center justify-center gap-1 mt-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
                 <span className="font-bold">{stats.avgContent}</span>
               </div>
             </CardContent>
@@ -82,7 +82,7 @@ export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps
             <CardContent className="pt-4 text-center">
               <p className="text-sm text-muted-foreground">Organisation</p>
               <div className="flex items-center justify-center gap-1 mt-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
                 <span className="font-bold">{stats.avgOrganization}</span>
               </div>
             </CardContent>
@@ -91,7 +91,7 @@ export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps
             <CardContent className="pt-4 text-center">
               <p className="text-sm text-muted-foreground">Recommandent</p>
               <div className="flex items-center justify-center gap-1 mt-1">
-                <ThumbsUp className="h-4 w-4 text-green-600" />
+                <ThumbsUp className="h-4 w-4 text-[#2980B9]" />
                 <span className="font-bold">{stats.recommendPercent}%</span>
               </div>
             </CardContent>

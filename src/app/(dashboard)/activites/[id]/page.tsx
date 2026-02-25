@@ -125,7 +125,7 @@ export default async function ActivityDetailPage({
         <Card>
           <CardContent className="pt-6 text-center">
             <div className="flex justify-center mb-2">
-              <Users className="h-5 w-5 text-green-600" />
+              <Users className="h-5 w-5 text-[#2980B9]" />
             </div>
             <div className="text-2xl font-bold">{activity._count.attendances}</div>
             <p className="text-xs text-muted-foreground">Présences</p>
@@ -134,7 +134,7 @@ export default async function ActivityDetailPage({
         <Card>
           <CardContent className="pt-6 text-center">
             <div className="flex justify-center mb-2">
-              <MessageSquare className="h-5 w-5 text-purple-600" />
+              <MessageSquare className="h-5 w-5 text-[#D4A017]" />
             </div>
             <div className="text-2xl font-bold">{activity._count.feedbacks}</div>
             <p className="text-xs text-muted-foreground">Feedbacks</p>

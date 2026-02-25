@@ -94,7 +94,7 @@ export function Sidebar({ serviceName, open, onClose }: SidebarProps) {
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary/10 text-primary"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
@@ -112,7 +112,7 @@ export function Sidebar({ serviceName, open, onClose }: SidebarProps) {
             <Button
               type="submit"
               variant="ghost"
-              className="w-full justify-start gap-3 text-gray-600 hover:text-gray-900"
+              className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-5 w-5" />
               Déconnexion

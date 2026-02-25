@@ -39,22 +39,22 @@ export default async function DashboardPage() {
       title: "Activités",
       value: activitiesCount,
       icon: CalendarDays,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      color: "text-[#2980B9]",
+      bg: "bg-[#2980B9]/10",
     },
     {
       title: "Présences",
       value: attendancesCount,
       icon: Users,
-      color: "text-green-600",
-      bg: "bg-green-50",
+      color: "text-[#14355A]",
+      bg: "bg-[#14355A]/10",
     },
     {
       title: "Feedbacks",
       value: feedbacksCount,
       icon: MessageSquare,
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      color: "text-[#7DD3D0]",
+      bg: "bg-[#7DD3D0]/20",
     },
     {
       title: "Note moyenne",
@@ -62,8 +62,8 @@ export default async function DashboardPage() {
         ? avgRating._avg.overallRating.toFixed(1) + "/5"
         : "N/A",
       icon: TrendingUp,
-      color: "text-orange-600",
-      bg: "bg-orange-50",
+      color: "text-[#D4A017]",
+      bg: "bg-[#D4A017]/10",
     },
   ];
 
@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                 <Link
                   key={activity.id}
                   href={`/activites/${activity.id}`}
-                  className="flex items-center justify-between rounded-md border p-3 hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between rounded-md border p-3 hover:bg-muted transition-colors"
                 >
                   <div>
                     <p className="font-medium">{activity.title}</p>

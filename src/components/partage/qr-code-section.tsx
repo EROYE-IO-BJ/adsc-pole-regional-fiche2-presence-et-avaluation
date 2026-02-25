@@ -91,7 +91,7 @@ function CopyLink({ url }: { url: string }) {
       <Input value={url} readOnly className="text-xs" />
       <Button variant="outline" size="icon" onClick={handleCopy}>
         {copied ? (
-          <Check className="h-4 w-4 text-green-600" />
+          <Check className="h-4 w-4 text-[#2980B9]" />
         ) : (
           <Copy className="h-4 w-4" />
         )}

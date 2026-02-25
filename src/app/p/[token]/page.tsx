@@ -33,12 +33,12 @@ export default async function PublicLandingPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#14355A] to-[#7DD3D0] flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Activity info */}
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">{activity.title}</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-white">{activity.title}</h1>
+          <p className="text-white/80">
             {new Date(activity.date).toLocaleDateString("fr-FR", {
               day: "numeric",
               month: "long",
@@ -46,7 +46,7 @@ export default async function PublicLandingPage({
             })}
           </p>
           {activity.location && (
-            <p className="text-sm text-gray-500">{activity.location}</p>
+            <p className="text-sm text-white/60">{activity.location}</p>
           )}
         </div>
 
@@ -56,8 +56,8 @@ export default async function PublicLandingPage({
             href={`/p/${token}/presence`}
             className="flex items-center gap-4 rounded-xl bg-white p-5 shadow-sm border hover:shadow-md transition-shadow"
           >
-            <div className="rounded-full bg-green-100 p-3">
-              <ClipboardList className="h-6 w-6 text-green-600" />
+            <div className="rounded-full bg-[#7DD3D0]/20 p-3">
+              <ClipboardList className="h-6 w-6 text-[#2980B9]" />
             </div>
             <div>
               <h2 className="font-semibold text-gray-900">Feuille de présence</h2>
@@ -69,8 +69,8 @@ export default async function PublicLandingPage({
             href={`/p/${token}/retour`}
             className="flex items-center gap-4 rounded-xl bg-white p-5 shadow-sm border hover:shadow-md transition-shadow"
           >
-            <div className="rounded-full bg-purple-100 p-3">
-              <MessageSquare className="h-6 w-6 text-purple-600" />
+            <div className="rounded-full bg-[#D4A017]/20 p-3">
+              <MessageSquare className="h-6 w-6 text-[#D4A017]" />
             </div>
             <div>
               <h2 className="font-semibold text-gray-900">Donner votre avis</h2>
@@ -79,7 +79,7 @@ export default async function PublicLandingPage({
           </Link>
         </div>
 
-        <p className="text-center text-xs text-gray-400">Sèmè City</p>
+        <p className="text-center text-xs text-white/50">Sèmè City</p>
       </div>
     </div>
   );
