@@ -8,13 +8,15 @@ import { SessionProvider } from "next-auth/react";
 interface DashboardShellProps {
   children: React.ReactNode;
   userName: string;
-  serviceName: string;
+  serviceName: string | null;
+  role: string;
 }
 
 export function DashboardShell({
   children,
   userName,
   serviceName,
+  role,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -23,6 +25,7 @@ export function DashboardShell({
       <div className="flex h-screen overflow-hidden">
         <Sidebar
           serviceName={serviceName}
+          role={role}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

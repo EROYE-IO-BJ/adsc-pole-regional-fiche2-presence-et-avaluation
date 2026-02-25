@@ -15,6 +15,9 @@ export const authConfig: NextAuthConfig = {
       if (
         pathname.startsWith("/p/") ||
         pathname.startsWith("/connexion") ||
+        pathname.startsWith("/inscription") ||
+        pathname.startsWith("/verifier-email") ||
+        pathname.startsWith("/invitation/") ||
         pathname === "/" ||
         pathname.startsWith("/api/auth")
       ) {
@@ -35,18 +38,18 @@ export const authConfig: NextAuthConfig = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.serviceId = (user as any).serviceId;
-        token.serviceName = (user as any).serviceName;
-        token.serviceType = (user as any).serviceType;
+        token.role = (user as any).role;
+        token.serviceId = (user as any).serviceId ?? null;
+        token.serviceName = (user as any).serviceName ?? null;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub!;
-        (session.user as any).serviceId = token.serviceId;
-        (session.user as any).serviceName = token.serviceName;
-        (session.user as any).serviceType = token.serviceType;
+        session.user.role = token.role as any;
+        session.user.serviceId = (token.serviceId as string) ?? null;
+        session.user.serviceName = (token.serviceName as string) ?? null;
       }
       return session;
     },

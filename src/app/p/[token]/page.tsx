@@ -12,7 +12,7 @@ export default async function PublicLandingPage({
 
   const activity = await prisma.activity.findUnique({
     where: { accessToken: token },
-    select: { id: true, title: true, date: true, location: true, status: true },
+    select: { id: true, title: true, date: true, location: true, status: true, requiresRegistration: true },
   });
 
   if (!activity) {
@@ -62,6 +62,11 @@ export default async function PublicLandingPage({
             <div>
               <h2 className="font-semibold text-gray-900">Feuille de présence</h2>
               <p className="text-sm text-gray-500">Signez votre présence</p>
+              {activity.requiresRegistration && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Inscription préalable requise
+                </p>
+              )}
             </div>
           </Link>
 

@@ -6,6 +6,8 @@ export const createActivitySchema = z.object({
   date: z.string().min(1, "La date est requise"),
   location: z.string().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "CLOSED"]).default("ACTIVE"),
+  requiresRegistration: z.boolean().default(false),
+  intervenantId: z.string().optional(),
 });
 
 export const updateActivitySchema = createActivitySchema.partial();

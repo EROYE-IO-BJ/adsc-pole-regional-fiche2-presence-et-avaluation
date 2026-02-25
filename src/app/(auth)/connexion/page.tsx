@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +33,7 @@ function LoginForm() {
     });
 
     if (result?.error) {
-      setError("Email ou mot de passe incorrect");
+      setError("Email ou mot de passe incorrect, ou email non vérifié");
       setLoading(false);
     } else {
       router.push(callbackUrl);
@@ -73,6 +74,12 @@ function LoginForm() {
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Se connecter
       </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        Pas de compte ?{" "}
+        <Link href="/inscription" className="text-primary hover:underline">
+          S&apos;inscrire
+        </Link>
+      </p>
     </form>
   );
 }
@@ -84,7 +91,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Sèmè City</CardTitle>
           <CardDescription>
-            Connectez-vous à votre espace administrateur
+            Connectez-vous à votre espace
           </CardDescription>
         </CardHeader>
         <CardContent>

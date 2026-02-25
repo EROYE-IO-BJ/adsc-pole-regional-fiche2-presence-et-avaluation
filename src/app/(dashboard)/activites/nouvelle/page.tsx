@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,34 @@ import {
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+
+type Intervenant = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+type Service = {
+  id: string;
+  name: string;
+};
 
 export default function NewActivityPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [requiresRegistration, setRequiresRegistration] = useState(false);
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  useEffect(() => {
+    fetch("/api/intervenants").then((r) => r.json()).then(setIntervenants);
+    if (isAdmin) {
+      fetch("/api/services").then((r) => r.json()).then(setServices);
+    }
+  }, [isAdmin]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,13 +52,19 @@ export default function NewActivityPage() {
 
     const formData = new FormData(e.currentTarget);
 
-    const data = {
+    const data: any = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       date: formData.get("date") as string,
       location: formData.get("location") as string,
       status: formData.get("status") as string,
+      requiresRegistration,
+      intervenantId: (formData.get("intervenantId") as string) || undefined,
     };
+
+    if (isAdmin) {
+      data.serviceId = formData.get("serviceId") as string;
+    }
 
     const res = await fetch("/api/activites", {
       method: "POST",
@@ -111,6 +141,24 @@ export default function NewActivityPage() {
               </div>
             </div>
 
+            {isAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="serviceId">Service *</Label>
+                <Select name="serviceId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="status">Statut</Label>
               <Select name="status" defaultValue="ACTIVE">
@@ -124,6 +172,42 @@ export default function NewActivityPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {intervenants.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="intervenantId">Intervenant</Label>
+                <Select name="intervenantId">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Aucun intervenant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {intervenants.map((i) => (
+                      <SelectItem key={i.id} value={i.id}>
+                        {i.name} ({i.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <input
+                id="requiresRegistration"
+                type="checkbox"
+                checked={requiresRegistration}
+                onChange={(e) => setRequiresRegistration(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="requiresRegistration" className="cursor-pointer">
+                Inscription préalable requise
+              </Label>
+            </div>
+            {requiresRegistration && (
+              <p className="text-xs text-muted-foreground -mt-2 ml-7">
+                Les participants devront s&apos;inscrire à l&apos;avance pour pouvoir enregistrer leur présence.
+              </p>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={loading}>

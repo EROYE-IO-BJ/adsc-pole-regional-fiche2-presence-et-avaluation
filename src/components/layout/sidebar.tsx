@@ -9,42 +9,80 @@ import {
   Settings,
   LogOut,
   X,
+  Building2,
+  Users,
+  Mail,
+  History,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-const navigation = [
-  {
-    name: "Tableau de bord",
-    href: "/tableau-de-bord",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Activités",
-    href: "/activites",
-    icon: CalendarDays,
-  },
-  {
-    name: "Nouvelle activité",
-    href: "/activites/nouvelle",
-    icon: Plus,
-  },
-  {
-    name: "Paramètres",
-    href: "/parametres",
-    icon: Settings,
-  },
-];
+type NavItem = {
+  name: string;
+  href: string;
+  icon: any;
+};
+
+function getNavigation(role: string): NavItem[] {
+  switch (role) {
+    case "ADMIN":
+      return [
+        { name: "Tableau de bord", href: "/tableau-de-bord", icon: LayoutDashboard },
+        { name: "Activités", href: "/activites", icon: CalendarDays },
+        { name: "Nouvelle activité", href: "/activites/nouvelle", icon: Plus },
+        { name: "Services", href: "/admin/services", icon: Building2 },
+        { name: "Utilisateurs", href: "/admin/utilisateurs", icon: Users },
+        { name: "Invitations", href: "/admin/invitations", icon: Mail },
+        { name: "Paramètres", href: "/parametres", icon: Settings },
+      ];
+    case "RESPONSABLE_SERVICE":
+      return [
+        { name: "Tableau de bord", href: "/tableau-de-bord", icon: LayoutDashboard },
+        { name: "Activités", href: "/activites", icon: CalendarDays },
+        { name: "Nouvelle activité", href: "/activites/nouvelle", icon: Plus },
+        { name: "Invitations", href: "/admin/invitations", icon: Mail },
+        { name: "Paramètres", href: "/parametres", icon: Settings },
+      ];
+    case "INTERVENANT":
+      return [
+        { name: "Tableau de bord", href: "/tableau-de-bord", icon: LayoutDashboard },
+        { name: "Mes activités", href: "/activites", icon: CalendarDays },
+        { name: "Paramètres", href: "/parametres", icon: Settings },
+      ];
+    case "PARTICIPANT":
+      return [
+        { name: "Mon espace", href: "/mon-espace", icon: LayoutDashboard },
+        { name: "Activités", href: "/mon-espace/activites", icon: ClipboardList },
+        { name: "Historique", href: "/mon-espace/historique", icon: History },
+        { name: "Paramètres", href: "/parametres", icon: Settings },
+      ];
+    default:
+      return [
+        { name: "Tableau de bord", href: "/tableau-de-bord", icon: LayoutDashboard },
+        { name: "Paramètres", href: "/parametres", icon: Settings },
+      ];
+  }
+}
 
 interface SidebarProps {
-  serviceName: string;
+  serviceName: string | null;
+  role: string;
   open: boolean;
   onClose: () => void;
 }
 
-export function Sidebar({ serviceName, open, onClose }: SidebarProps) {
+export function Sidebar({ serviceName, role, open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const navigation = getNavigation(role);
+
+  const roleLabels: Record<string, string> = {
+    ADMIN: "Administrateur",
+    RESPONSABLE_SERVICE: "Responsable",
+    INTERVENANT: "Intervenant",
+    PARTICIPANT: "Participant",
+  };
 
   return (
     <>
@@ -67,7 +105,9 @@ export function Sidebar({ serviceName, open, onClose }: SidebarProps) {
         <div className="flex h-16 items-center justify-between px-4 border-b">
           <div>
             <h2 className="font-bold text-lg">Sèmè City</h2>
-            <p className="text-xs text-muted-foreground truncate">{serviceName}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {serviceName || roleLabels[role] || role}
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -84,7 +124,10 @@ export function Sidebar({ serviceName, open, onClose }: SidebarProps) {
           {navigation.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== "/tableau-de-bord" && pathname.startsWith(item.href) && item.href !== "/activites/nouvelle");
+              (item.href !== "/tableau-de-bord" &&
+                item.href !== "/mon-espace" &&
+                pathname.startsWith(item.href) &&
+                item.href !== "/activites/nouvelle");
             return (
               <Link
                 key={item.name}

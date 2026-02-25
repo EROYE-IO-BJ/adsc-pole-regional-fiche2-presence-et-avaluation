@@ -10,12 +10,20 @@ export default function Home() {
         <p className="text-lg text-white/80 max-w-md mx-auto">
           Plateforme de collecte de présences et feedbacks pour les activités
         </p>
-        <Link
-          href="/connexion"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
-        >
-          Espace Administrateur
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/connexion"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          >
+            Se connecter
+          </Link>
+          <Link
+            href="/inscription"
+            className="inline-flex items-center justify-center rounded-md bg-white/20 backdrop-blur px-6 py-3 text-sm font-medium text-white border border-white/30 hover:bg-white/30 transition-colors"
+          >
+            S&apos;inscrire
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -7,10 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ServiceType {
-  IMA_LINGUA
-  CAREER_CENTER
-  RECRUTEMENT_MOBILITE
+enum Role {
+  PARTICIPANT
+  INTERVENANT
+  RESPONSABLE_SERVICE
+  ADMIN
 }
 
 enum ActivityStatus {
@@ -20,11 +21,12 @@ enum ActivityStatus {
 }
 
 model Service {
-  id        String      @id @default(cuid())
-  name      String
-  type      ServiceType @unique
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   users      User[]
   activities Activity[]
@@ -35,35 +37,44 @@ model User {
   name          String
   email         String    @unique
   emailVerified DateTime?
-  password      String
+  password      String?
   image         String?
-  serviceId     String
+  role          Role      @default(PARTICIPANT)
+  serviceId     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  service    Service    @relation(fields: [serviceId], references: [id])
-  activities Activity[]
-  accounts   Account[]
-  sessions   Session[]
+  service              Service?       @relation(fields: [serviceId], references: [id])
+  createdActivities    Activity[]     @relation("ActivityCreator")
+  intervenantActivities Activity[]    @relation("ActivityIntervenant")
+  accounts             Account[]
+  sessions             Session[]
+  registrations        Registration[]
+  sentInvitations      Invitation[]   @relation("InvitationSender")
+  receivedInvitation   Invitation?    @relation("InvitationReceiver")
 }
 
 model Activity {
-  id          String         @id @default(cuid())
-  title       String
-  description String?
-  date        DateTime
-  location    String?
-  status      ActivityStatus @default(ACTIVE)
-  accessToken String         @unique @default(cuid())
-  serviceId   String
-  createdById String
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                    String         @id @default(cuid())
+  title                 String
+  description           String?
+  date                  DateTime
+  location              String?
+  status                ActivityStatus @default(ACTIVE)
+  requiresRegistration  Boolean        @default(false)
+  accessToken           String         @unique @default(cuid())
+  serviceId             String
+  createdById           String
+  intervenantId         String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
-  service     Service      @relation(fields: [serviceId], references: [id])
-  createdBy   User         @relation(fields: [createdById], references: [id])
-  attendances Attendance[]
-  feedbacks   Feedback[]
+  service       Service        @relation(fields: [serviceId], references: [id])
+  createdBy     User           @relation("ActivityCreator", fields: [createdById], references: [id])
+  intervenant   User?          @relation("ActivityIntervenant", fields: [intervenantId], references: [id])
+  attendances   Attendance[]
+  feedbacks     Feedback[]
+  registrations Registration[]
 }
 
 model Attendance {
@@ -83,19 +94,47 @@ model Attendance {
 }
 
 model Feedback {
-  id             String   @id @default(cuid())
-  overallRating  Int      // 1-5
-  contentRating  Int      // 1-5
-  organizationRating Int  // 1-5
-  comment        String?  @db.Text
-  suggestions    String?  @db.Text
-  wouldRecommend Boolean  @default(true)
-  participantName String?
-  participantEmail String?
-  activityId     String
-  createdAt      DateTime @default(now())
+  id                 String   @id @default(cuid())
+  overallRating      Int      // 1-5
+  contentRating      Int      // 1-5
+  organizationRating Int      // 1-5
+  comment            String?  @db.Text
+  suggestions        String?  @db.Text
+  wouldRecommend     Boolean  @default(true)
+  participantName    String?
+  participantEmail   String?
+  activityId         String
+  createdAt          DateTime @default(now())
 
   activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model Registration {
+  id         String   @id @default(cuid())
+  userId     String
+  activityId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  email      String
+  role       Role
+  serviceId  String?
+  token      String    @unique @default(cuid())
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  senderId   String
+  receiverId String?   @unique
+  createdAt  DateTime  @default(now())
+
+  sender   User  @relation("InvitationSender", fields: [senderId], references: [id])
+  receiver User? @relation("InvitationReceiver", fields: [receiverId], references: [id])
 }
 
 // NextAuth.js models

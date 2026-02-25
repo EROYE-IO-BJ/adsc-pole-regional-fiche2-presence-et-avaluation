@@ -5,11 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Share2, CalendarDays, MapPin, Users, MessageSquare } from "lucide-react";
+import { ArrowLeft, Share2, CalendarDays, MapPin, Users, MessageSquare, UserCheck, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { AttendanceTable } from "@/components/presences/attendance-table";
 import { FeedbackList } from "@/components/retours/feedback-list";
 import { ActivityActions } from "@/components/activites/activity-actions";
+import { Role } from "@prisma/client";
 
 const statusLabels: Record<string, { label: string; variant: "default" | "success" | "warning" | "secondary" }> = {
   DRAFT: { label: "Brouillon", variant: "secondary" },
@@ -24,15 +25,32 @@ export default async function ActivityDetailPage({
 }) {
   const { id } = await params;
   const session = await auth();
-  const serviceId = (session?.user as any)?.serviceId;
+  const userRole = session?.user?.role;
+  const userServiceId = session?.user?.serviceId;
+  const userId = session?.user?.id;
+
+  // Build query based on role
+  let where: any = { id };
+  if (userRole === Role.RESPONSABLE_SERVICE) {
+    where.serviceId = userServiceId;
+  } else if (userRole === Role.INTERVENANT) {
+    where.intervenantId = userId;
+  }
+  // ADMIN can see all
 
   const activity = await prisma.activity.findFirst({
-    where: { id, serviceId },
+    where,
     include: {
       attendances: { orderBy: { createdAt: "desc" } },
       feedbacks: { orderBy: { createdAt: "desc" } },
+      registrations: {
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+      },
       createdBy: { select: { name: true } },
-      _count: { select: { attendances: true, feedbacks: true } },
+      intervenant: { select: { name: true, email: true } },
+      service: { select: { name: true } },
+      _count: { select: { attendances: true, feedbacks: true, registrations: true } },
     },
   });
 
@@ -65,6 +83,8 @@ export default async function ActivityDetailPage({
       }
     : null;
 
+  const canEdit = userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,6 +99,9 @@ export default async function ActivityDetailPage({
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{activity.title}</h1>
               <Badge variant={status.variant}>{status.label}</Badge>
+              {activity.requiresRegistration && (
+                <Badge variant="secondary">Inscription requise</Badge>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -97,18 +120,27 @@ export default async function ActivityDetailPage({
                   {activity.location}
                 </span>
               )}
+              <span className="text-xs">Service : {activity.service.name}</span>
             </div>
+            {activity.intervenant && (
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                <UserCheck className="h-3.5 w-3.5" />
+                Intervenant : {activity.intervenant.name}
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex gap-2 ml-14 sm:ml-0">
-          <Button variant="outline" asChild>
-            <Link href={`/partage/${activity.id}`}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Partager
-            </Link>
-          </Button>
-          <ActivityActions activityId={activity.id} activityStatus={activity.status} />
-        </div>
+        {canEdit && (
+          <div className="flex gap-2 ml-14 sm:ml-0">
+            <Button variant="outline" asChild>
+              <Link href={`/partage/${activity.id}`}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Partager
+              </Link>
+            </Button>
+            <ActivityActions activityId={activity.id} activityStatus={activity.status} />
+          </div>
+        )}
       </div>
 
       {/* Description */}
@@ -167,6 +199,11 @@ export default async function ActivityDetailPage({
           <TabsTrigger value="retours">
             Retours ({activity._count.feedbacks})
           </TabsTrigger>
+          {activity.requiresRegistration && (
+            <TabsTrigger value="inscriptions">
+              Inscriptions ({activity._count.registrations})
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="presences">
@@ -183,6 +220,43 @@ export default async function ActivityDetailPage({
             activityId={activity.id}
           />
         </TabsContent>
+
+        {activity.requiresRegistration && (
+          <TabsContent value="inscriptions">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ClipboardList className="h-5 w-5" />
+                  Participants inscrits
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activity.registrations.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Aucune inscription.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {activity.registrations.map((reg) => (
+                      <div
+                        key={reg.id}
+                        className="flex items-center justify-between border-b pb-2 last:border-0"
+                      >
+                        <div>
+                          <p className="font-medium">{reg.user.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {reg.user.email}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(reg.createdAt).toLocaleDateString("fr-FR")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

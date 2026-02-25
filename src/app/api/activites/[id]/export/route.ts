@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, handleAuthError } from "@/lib/authorization";
+import { Role } from "@prisma/client";
 
 // GET /api/activites/[id]/export?format=csv
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  let user;
+  try {
+    user = await requireAuth();
+  } catch (error) {
+    const { error: msg, status } = handleAuthError(error);
+    return NextResponse.json({ error: msg }, { status });
   }
 
   const { id } = await params;
-  const serviceId = (session.user as any).serviceId;
   const format = request.nextUrl.searchParams.get("format") || "csv";
   const type = request.nextUrl.searchParams.get("type") || "attendances";
 
-  const activity = await prisma.activity.findFirst({
-    where: { id, serviceId },
+  const activity = await prisma.activity.findUnique({
+    where: { id },
     include: {
       attendances: { orderBy: { createdAt: "asc" } },
       feedbacks: { orderBy: { createdAt: "asc" } },
@@ -27,6 +30,16 @@ export async function GET(
 
   if (!activity) {
     return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
+  }
+
+  // Check access
+  const hasAccess =
+    user.role === Role.ADMIN ||
+    (user.role === Role.RESPONSABLE_SERVICE && activity.serviceId === user.serviceId) ||
+    (user.role === Role.INTERVENANT && activity.intervenantId === user.id);
+
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
   }
 
   if (format === "csv") {

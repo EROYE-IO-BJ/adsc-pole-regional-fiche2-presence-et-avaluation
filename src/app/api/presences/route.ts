@@ -33,6 +33,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check if activity requires registration
+  if (activity.requiresRegistration) {
+    // Check if the participant is registered (by email match with a registered user)
+    const registeredUser = await prisma.user.findUnique({
+      where: { email: validation.data.email },
+    });
+
+    if (registeredUser) {
+      const registration = await prisma.registration.findUnique({
+        where: {
+          userId_activityId: {
+            userId: registeredUser.id,
+            activityId: activity.id,
+          },
+        },
+      });
+
+      if (!registration) {
+        return NextResponse.json(
+          { error: "Inscription préalable requise pour cette activité. Veuillez vous inscrire d'abord." },
+          { status: 403 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: "Inscription préalable requise pour cette activité. Veuillez créer un compte et vous inscrire." },
+        { status: 403 }
+      );
+    }
+  }
+
   // Check for duplicate
   const existing = await prisma.attendance.findUnique({
     where: {

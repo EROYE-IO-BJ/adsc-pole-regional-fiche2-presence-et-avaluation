@@ -26,7 +26,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           include: { service: true },
         });
 
-        if (!user) return null;
+        if (!user || !user.password) return null;
+
+        // Check email verification
+        if (!user.emailVerified) return null;
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password as string,
@@ -40,9 +43,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           email: user.email,
           image: user.image,
+          role: user.role,
           serviceId: user.serviceId,
-          serviceName: user.service.name,
-          serviceType: user.service.type,
+          serviceName: user.service?.name ?? null,
         };
       },
     }),

@@ -16,7 +16,8 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       userName={session.user.name}
-      serviceName={(session.user as any).serviceName}
+      serviceName={session.user.serviceName ?? null}
+      role={session.user.role}
     >
       {children}
     </DashboardShell>

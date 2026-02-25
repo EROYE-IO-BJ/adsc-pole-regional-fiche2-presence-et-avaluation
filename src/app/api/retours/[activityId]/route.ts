@@ -1,27 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, handleAuthError } from "@/lib/authorization";
+import { Role } from "@prisma/client";
 
-// GET /api/retours/[activityId] - Admin endpoint to list feedbacks
+// GET /api/retours/[activityId] - List feedbacks for an activity
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ activityId: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  let user;
+  try {
+    user = await requireAuth();
+  } catch (error) {
+    const { error: msg, status } = handleAuthError(error);
+    return NextResponse.json({ error: msg }, { status });
   }
 
   const { activityId } = await params;
-  const serviceId = (session.user as any).serviceId;
 
-  // Verify activity belongs to user's service
-  const activity = await prisma.activity.findFirst({
-    where: { id: activityId, serviceId },
+  // Verify activity access based on role
+  const activity = await prisma.activity.findUnique({
+    where: { id: activityId },
   });
 
   if (!activity) {
     return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
+  }
+
+  const hasAccess =
+    user.role === Role.ADMIN ||
+    (user.role === Role.RESPONSABLE_SERVICE && activity.serviceId === user.serviceId) ||
+    (user.role === Role.INTERVENANT && activity.intervenantId === user.id);
+
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
   }
 
   const feedbacks = await prisma.feedback.findMany({
