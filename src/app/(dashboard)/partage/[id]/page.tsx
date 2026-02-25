@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { QRCodeSection } from "@/components/partage/qr-code-section";
+import { Role } from "@prisma/client";
 
 export default async function SharePage({
   params,
@@ -14,10 +14,20 @@ export default async function SharePage({
 }) {
   const { id } = await params;
   const session = await auth();
-  const serviceId = (session?.user as any)?.serviceId;
+  const userRole = session?.user?.role;
+  const serviceId = session?.user?.serviceId;
+
+  // Build where clause based on role
+  const where: any = { id };
+  if (userRole === Role.RESPONSABLE_SERVICE && serviceId) {
+    where.serviceId = serviceId;
+  } else if (userRole === Role.INTERVENANT) {
+    where.intervenantId = session?.user?.id;
+  }
+  // ADMIN: no additional filter
 
   const activity = await prisma.activity.findFirst({
-    where: { id, serviceId },
+    where,
     select: { id: true, title: true, accessToken: true, date: true },
   });
 

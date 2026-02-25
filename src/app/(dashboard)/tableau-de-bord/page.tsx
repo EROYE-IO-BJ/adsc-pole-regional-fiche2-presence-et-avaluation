@@ -5,22 +5,33 @@ import { CalendarDays, Users, MessageSquare, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DashboardCharts } from "@/components/dashboard/charts";
+import { Role } from "@prisma/client";
 
 export default async function DashboardPage() {
   const session = await auth();
-  const serviceId = (session?.user as any)?.serviceId;
+  const userRole = session?.user?.role;
+  const serviceId = session?.user?.serviceId;
+
+  // Build where clause based on role
+  const activityWhere: any = {};
+  if (userRole === Role.RESPONSABLE_SERVICE && serviceId) {
+    activityWhere.serviceId = serviceId;
+  } else if (userRole === Role.INTERVENANT) {
+    activityWhere.intervenantId = session?.user?.id;
+  }
+  // ADMIN: no filter (sees all)
 
   const [activitiesCount, attendancesCount, feedbacksCount, recentActivities] =
     await Promise.all([
-      prisma.activity.count({ where: { serviceId } }),
+      prisma.activity.count({ where: activityWhere }),
       prisma.attendance.count({
-        where: { activity: { serviceId } },
+        where: { activity: activityWhere },
       }),
       prisma.feedback.count({
-        where: { activity: { serviceId } },
+        where: { activity: activityWhere },
       }),
       prisma.activity.findMany({
-        where: { serviceId },
+        where: activityWhere,
         orderBy: { date: "desc" },
         take: 5,
         include: {
@@ -30,7 +41,7 @@ export default async function DashboardPage() {
     ]);
 
   const avgRating = await prisma.feedback.aggregate({
-    where: { activity: { serviceId } },
+    where: { activity: activityWhere },
     _avg: { overallRating: true },
   });
 
@@ -73,12 +84,14 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Tableau de bord</h1>
           <p className="text-muted-foreground">
-            Vue d&apos;ensemble de votre service
+            Vue d&apos;ensemble {userRole === Role.ADMIN ? "globale" : "de votre service"}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/activites/nouvelle">Nouvelle activité</Link>
-        </Button>
+        {(userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE) && (
+          <Button asChild>
+            <Link href="/activites/nouvelle">Nouvelle activité</Link>
+          </Button>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -101,7 +114,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <DashboardCharts serviceId={serviceId} />
+      <DashboardCharts serviceId={serviceId ?? undefined} />
 
       {/* Recent Activities */}
       <Card>

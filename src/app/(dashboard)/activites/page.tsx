@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, CalendarDays, Users, MessageSquare, MapPin } from "lucide-react";
+import { Role } from "@prisma/client";
 
 const statusLabels: Record<string, { label: string; variant: "default" | "success" | "warning" | "secondary" }> = {
   DRAFT: { label: "Brouillon", variant: "secondary" },
@@ -14,16 +15,29 @@ const statusLabels: Record<string, { label: string; variant: "default" | "succes
 
 export default async function ActivitiesPage() {
   const session = await auth();
-  const serviceId = (session?.user as any)?.serviceId;
+  const userRole = session?.user?.role;
+  const serviceId = session?.user?.serviceId;
+
+  // Build where clause based on role
+  const where: any = {};
+  if (userRole === Role.RESPONSABLE_SERVICE && serviceId) {
+    where.serviceId = serviceId;
+  } else if (userRole === Role.INTERVENANT) {
+    where.intervenantId = session?.user?.id;
+  }
+  // ADMIN: no filter
 
   const activities = await prisma.activity.findMany({
-    where: { serviceId },
+    where,
     orderBy: { date: "desc" },
     include: {
       _count: { select: { attendances: true, feedbacks: true } },
       createdBy: { select: { name: true } },
+      service: { select: { name: true } },
     },
   });
+
+  const canCreate = userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE;
 
   return (
     <div className="space-y-6">
@@ -31,15 +45,17 @@ export default async function ActivitiesPage() {
         <div>
           <h1 className="text-2xl font-bold">Activités</h1>
           <p className="text-muted-foreground">
-            Gérez les activités de votre service
+            {userRole === Role.ADMIN ? "Toutes les activités" : "Activités de votre service"}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/activites/nouvelle">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle activité
-          </Link>
-        </Button>
+        {canCreate && (
+          <Button asChild>
+            <Link href="/activites/nouvelle">
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle activité
+            </Link>
+          </Button>
+        )}
       </div>
 
       {activities.length === 0 ? (
@@ -48,14 +64,16 @@ export default async function ActivitiesPage() {
             <CalendarDays className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium">Aucune activité</h3>
             <p className="text-muted-foreground text-sm mt-1">
-              Commencez par créer votre première activité
+              {canCreate ? "Commencez par créer votre première activité" : "Aucune activité disponible"}
             </p>
-            <Button asChild className="mt-4">
-              <Link href="/activites/nouvelle">
-                <Plus className="mr-2 h-4 w-4" />
-                Créer une activité
-              </Link>
-            </Button>
+            {canCreate && (
+              <Button asChild className="mt-4">
+                <Link href="/activites/nouvelle">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Créer une activité
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -87,6 +105,7 @@ export default async function ActivitiesPage() {
                               {activity.location}
                             </span>
                           )}
+                          <span className="text-xs">{activity.service.name}</span>
                         </div>
                       </div>
                       <div className="flex gap-4 text-sm">
