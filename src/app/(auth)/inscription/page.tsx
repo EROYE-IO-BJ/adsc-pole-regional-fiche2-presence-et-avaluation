@@ -48,7 +48,7 @@ function RegisterForm() {
     const result = await res.json();
 
     if (res.ok) {
-      router.push("/verifier-email?registered=true");
+      router.push("/connexion?registered=true");
     } else {
       setError(result.error || "Erreur lors de l'inscription");
       setLoading(false);

@@ -14,6 +14,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/tableau-de-bord";
+  const registered = searchParams.get("registered") === "true";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +44,11 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {registered && (
+        <div className="rounded-md bg-green-50 p-3 text-sm text-green-600">
+          Compte créé avec succès ! Vous pouvez maintenant vous connecter.
+        </div>
+      )}
       {error && (
         <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
           {error}
