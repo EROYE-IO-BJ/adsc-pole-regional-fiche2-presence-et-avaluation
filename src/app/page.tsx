@@ -67,7 +67,7 @@ export default function Home() {
             {demoAccounts.map((group) => (
               <div
                 key={group.role}
-                className="rounded-lg bg-white/10 border border-white/10 p-4 space-y-3"
+                className="rounded-lg bg-white/10 border border-white/10 p-4 space-y-3 overflow-hidden"
               >
                 <div>
                   <h3 className="text-sm font-semibold text-white">
@@ -77,19 +77,16 @@ export default function Home() {
                 </div>
                 <ul className="space-y-2">
                   {group.accounts.map((account) => (
-                    <li key={account.email} className="text-sm">
+                    <li key={account.email}>
                       <span className="text-white/70 block text-xs">
                         {account.name}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <code className="text-white/90 font-mono text-xs">
-                          {account.email}
-                        </code>
-                        <span className="text-white/40 text-xs">|</span>
-                        <code className="text-white/60 font-mono text-xs">
-                          password123
-                        </code>
-                      </div>
+                      <Link
+                        href={`/connexion`}
+                        className="inline-block text-xs font-mono text-white/90 hover:text-white underline underline-offset-2 break-all"
+                      >
+                        {account.email}
+                      </Link>
                     </li>
                   ))}
                 </ul>
