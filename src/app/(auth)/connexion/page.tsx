@@ -12,6 +12,7 @@ const demoAccounts = [
   { email: "superadmin@semecity.bj", role: "Super Admin" },
   { email: "admin.lingua@semecity.bj", role: "Admin" },
   { email: "admin.career@semecity.bj", role: "Admin" },
+  { email: "admin.recrutement@semecity.bj", role: "Admin" },
   { email: "resp.lingua@semecity.bj", role: "Responsable" },
   { email: "resp.career@semecity.bj", role: "Responsable" },
   { email: "resp.recrutement@semecity.bj", role: "Responsable" },
@@ -170,16 +171,24 @@ function LoginForm() {
           Mot de passe pour tous :{" "}
           <span className="font-bold text-gray-900">password123</span>
         </p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        <div className="space-y-1.5">
           {demoAccounts.map((account) => (
-            <div key={account.email} className="flex items-baseline gap-2 min-w-0">
-              <code className="text-xs font-mono text-[#6C5CE7] font-semibold truncate">
+            <button
+              key={account.email}
+              type="button"
+              onClick={() => {
+                const emailInput = document.getElementById("email") as HTMLInputElement;
+                if (emailInput) emailInput.value = account.email;
+              }}
+              className="w-full flex items-center justify-between rounded-lg px-3 py-1.5 hover:bg-[#6C5CE7]/5 transition-colors text-left"
+            >
+              <code className="text-xs font-mono text-[#6C5CE7] font-semibold">
                 {account.email}
               </code>
-              <span className="text-xs text-gray-500 shrink-0">
-                ({account.role})
+              <span className="text-xs text-gray-500 shrink-0 ml-2">
+                {account.role}
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
