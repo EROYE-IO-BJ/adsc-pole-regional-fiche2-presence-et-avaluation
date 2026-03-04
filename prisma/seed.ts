@@ -37,6 +37,20 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 12);
 
+  // Create super admin (centralized, sees all services)
+  await prisma.user.upsert({
+    where: { email: "superadmin@semecity.bj" },
+    update: { role: Role.ADMIN },
+    create: {
+      name: "Super Administrateur",
+      email: "superadmin@semecity.bj",
+      password: hashedPassword,
+      role: Role.ADMIN,
+      serviceId: null,
+      emailVerified: new Date(),
+    },
+  });
+
   // Create admin users (global admins, no service)
   const admins = [
     {

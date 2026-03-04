@@ -2,6 +2,13 @@ import Link from "next/link";
 
 const demoAccounts = [
   {
+    role: "Super Administrateur",
+    description: "Vision globale sur tous les services",
+    accounts: [
+      { name: "Super Admin", email: "superadmin@semecity.bj" },
+    ],
+  },
+  {
     role: "Administrateur",
     description: "Accès complet à toutes les fonctionnalités",
     accounts: [
