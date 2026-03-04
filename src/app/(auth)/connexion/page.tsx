@@ -162,21 +162,21 @@ function LoginForm() {
       </button>
 
       {/* Demo accounts */}
-      <div className="rounded-2xl bg-[#6C5CE7]/10 border border-[#6C5CE7]/20 p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-[#6C5CE7]">
+      <div className="rounded-2xl bg-white border border-[#6C5CE7]/30 p-5 space-y-3 shadow-sm">
+        <h3 className="text-sm font-bold text-[#6C5CE7]">
           Mode démo — Comptes disponibles
         </h3>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600">
           Mot de passe pour tous :{" "}
-          <span className="font-bold text-gray-700">password123</span>
+          <span className="font-bold text-gray-900">password123</span>
         </p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           {demoAccounts.map((account) => (
             <div key={account.email} className="flex items-baseline gap-2 min-w-0">
-              <code className="text-xs font-mono text-[#6C5CE7] truncate">
+              <code className="text-xs font-mono text-[#6C5CE7] font-semibold truncate">
                 {account.email}
               </code>
-              <span className="text-xs text-gray-400 shrink-0">
+              <span className="text-xs text-gray-500 shrink-0">
                 ({account.role})
               </span>
             </div>
