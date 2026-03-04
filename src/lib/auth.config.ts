@@ -24,8 +24,12 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
-      // Public API endpoints for POST
-      if (pathname === "/api/presences" || pathname === "/api/retours") {
+      // Public API endpoints
+      if (
+        pathname === "/api/presences" ||
+        pathname === "/api/retours" ||
+        pathname === "/api/seed"
+      ) {
         return true;
       }
 
