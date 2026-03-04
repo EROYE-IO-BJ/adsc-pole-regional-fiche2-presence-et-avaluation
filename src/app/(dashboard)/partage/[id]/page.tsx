@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserServiceIds } from "@/lib/authorization";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -15,14 +16,15 @@ export default async function SharePage({
   const { id } = await params;
   const session = await auth();
   const userRole = session?.user?.role;
-  const serviceId = session?.user?.serviceId;
+  const userId = session?.user?.id;
 
   // Build where clause based on role
   const where: any = { id };
-  if (userRole === Role.RESPONSABLE_SERVICE && serviceId) {
-    where.serviceId = serviceId;
+  if (userRole === Role.RESPONSABLE_SERVICE && userId) {
+    const serviceIds = await getUserServiceIds(userId);
+    where.serviceId = { in: serviceIds };
   } else if (userRole === Role.INTERVENANT) {
-    where.intervenantId = session?.user?.id;
+    where.intervenantId = userId;
   }
   // ADMIN: no additional filter
 

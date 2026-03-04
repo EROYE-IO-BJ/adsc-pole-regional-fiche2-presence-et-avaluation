@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserServiceIds } from "@/lib/authorization";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import Link from "next/link";
 import { AttendanceTable } from "@/components/presences/attendance-table";
 import { FeedbackList } from "@/components/retours/feedback-list";
 import { ActivityActions } from "@/components/activites/activity-actions";
+import { SessionList } from "@/components/activites/session-list";
 import { Role } from "@prisma/client";
 
 const statusLabels: Record<string, { label: string; variant: "default" | "success" | "warning" | "secondary" }> = {
@@ -26,13 +28,13 @@ export default async function ActivityDetailPage({
   const { id } = await params;
   const session = await auth();
   const userRole = session?.user?.role;
-  const userServiceId = session?.user?.serviceId;
   const userId = session?.user?.id;
 
   // Build query based on role
   let where: any = { id };
-  if (userRole === Role.RESPONSABLE_SERVICE) {
-    where.serviceId = userServiceId;
+  if (userRole === Role.RESPONSABLE_SERVICE && userId) {
+    const serviceIds = await getUserServiceIds(userId);
+    where.serviceId = { in: serviceIds };
   } else if (userRole === Role.INTERVENANT) {
     where.intervenantId = userId;
   }
@@ -43,6 +45,13 @@ export default async function ActivityDetailPage({
     include: {
       attendances: { orderBy: { createdAt: "desc" } },
       feedbacks: { orderBy: { createdAt: "desc" } },
+      sessions: {
+        orderBy: { date: "asc" },
+        include: {
+          intervenant: { select: { name: true } },
+          _count: { select: { attendances: true, feedbacks: true } },
+        },
+      },
       registrations: {
         include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
@@ -50,7 +59,8 @@ export default async function ActivityDetailPage({
       createdBy: { select: { name: true } },
       intervenant: { select: { name: true, email: true } },
       service: { select: { name: true } },
-      _count: { select: { attendances: true, feedbacks: true, registrations: true } },
+      program: { select: { id: true, name: true } },
+      _count: { select: { attendances: true, feedbacks: true, registrations: true, sessions: true } },
     },
   });
 
@@ -59,29 +69,52 @@ export default async function ActivityDetailPage({
   }
 
   const status = statusLabels[activity.status];
+  const isFormation = activity.type === "FORMATION";
+  const isService = activity.type === "SERVICE";
 
   // Calculate feedback stats
-  const feedbackStats = activity.feedbacks.length > 0
-    ? {
-        avgOverall: (
-          activity.feedbacks.reduce((sum, f) => sum + f.overallRating, 0) /
-          activity.feedbacks.length
-        ).toFixed(1),
-        avgContent: (
-          activity.feedbacks.reduce((sum, f) => sum + f.contentRating, 0) /
-          activity.feedbacks.length
-        ).toFixed(1),
-        avgOrganization: (
-          activity.feedbacks.reduce((sum, f) => sum + f.organizationRating, 0) /
-          activity.feedbacks.length
-        ).toFixed(1),
-        recommendPercent: Math.round(
-          (activity.feedbacks.filter((f) => f.wouldRecommend).length /
-            activity.feedbacks.length) *
-            100
-        ),
-      }
-    : null;
+  const formationFeedbacks = activity.feedbacks.filter(
+    (f) => f.feedbackType !== "SERVICE" && f.overallRating !== null
+  );
+  const serviceFeedbacks = activity.feedbacks.filter(
+    (f) => f.feedbackType === "SERVICE"
+  );
+
+  const feedbackStats = isService
+    ? serviceFeedbacks.length > 0
+      ? {
+          avgSatisfaction: (
+            serviceFeedbacks.reduce((sum, f) => sum + (f.satisfactionRating || 0), 0) /
+            serviceFeedbacks.length
+          ).toFixed(1),
+          clarityPercent: Math.round(
+            (serviceFeedbacks.filter((f) => f.informationClarity).length /
+              serviceFeedbacks.length) *
+              100
+          ),
+        }
+      : null
+    : formationFeedbacks.length > 0
+      ? {
+          avgOverall: (
+            formationFeedbacks.reduce((sum, f) => sum + (f.overallRating || 0), 0) /
+            formationFeedbacks.length
+          ).toFixed(1),
+          avgContent: (
+            formationFeedbacks.reduce((sum, f) => sum + (f.contentRating || 0), 0) /
+            formationFeedbacks.length
+          ).toFixed(1),
+          avgOrganization: (
+            formationFeedbacks.reduce((sum, f) => sum + (f.organizationRating || 0), 0) /
+            formationFeedbacks.length
+          ).toFixed(1),
+          recommendPercent: Math.round(
+            (formationFeedbacks.filter((f) => f.wouldRecommend).length /
+              formationFeedbacks.length) *
+              100
+          ),
+        }
+      : null;
 
   const canEdit = userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE;
 
@@ -99,6 +132,7 @@ export default async function ActivityDetailPage({
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{activity.title}</h1>
               <Badge variant={status.variant}>{status.label}</Badge>
+              <Badge variant="secondary">{isFormation ? "Formation" : "Service"}</Badge>
               {activity.requiresRegistration && (
                 <Badge variant="secondary">Inscription requise</Badge>
               )}
@@ -126,6 +160,11 @@ export default async function ActivityDetailPage({
               <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                 <UserCheck className="h-3.5 w-3.5" />
                 Intervenant : {activity.intervenant.name}
+              </p>
+            )}
+            {activity.program && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Programme : {activity.program.name}
               </p>
             )}
           </div>
@@ -175,17 +214,33 @@ export default async function ActivityDetailPage({
         <Card>
           <CardContent className="pt-6 text-center">
             <div className="text-2xl font-bold">
-              {feedbackStats ? `${feedbackStats.avgOverall}/5` : "N/A"}
+              {isService
+                ? feedbackStats && "avgSatisfaction" in feedbackStats
+                  ? `${feedbackStats.avgSatisfaction}/5`
+                  : "N/A"
+                : feedbackStats && "avgOverall" in feedbackStats
+                  ? `${feedbackStats.avgOverall}/5`
+                  : "N/A"}
             </div>
-            <p className="text-xs text-muted-foreground">Note moyenne</p>
+            <p className="text-xs text-muted-foreground">
+              {isService ? "Satisfaction" : "Note moyenne"}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
             <div className="text-2xl font-bold">
-              {feedbackStats ? `${feedbackStats.recommendPercent}%` : "N/A"}
+              {isService
+                ? feedbackStats && "clarityPercent" in feedbackStats
+                  ? `${feedbackStats.clarityPercent}%`
+                  : "N/A"
+                : feedbackStats && "recommendPercent" in feedbackStats
+                  ? `${feedbackStats.recommendPercent}%`
+                  : "N/A"}
             </div>
-            <p className="text-xs text-muted-foreground">Recommandent</p>
+            <p className="text-xs text-muted-foreground">
+              {isService ? "Clarté" : "Recommandent"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -199,6 +254,11 @@ export default async function ActivityDetailPage({
           <TabsTrigger value="retours">
             Retours ({activity._count.feedbacks})
           </TabsTrigger>
+          {isFormation && (
+            <TabsTrigger value="seances">
+              Séances ({activity._count.sessions})
+            </TabsTrigger>
+          )}
           {activity.requiresRegistration && (
             <TabsTrigger value="inscriptions">
               Inscriptions ({activity._count.registrations})
@@ -218,8 +278,19 @@ export default async function ActivityDetailPage({
             feedbacks={activity.feedbacks}
             stats={feedbackStats}
             activityId={activity.id}
+            activityType={activity.type}
           />
         </TabsContent>
+
+        {isFormation && (
+          <TabsContent value="seances">
+            <SessionList
+              sessions={activity.sessions}
+              activityId={activity.id}
+              canEdit={canEdit}
+            />
+          </TabsContent>
+        )}
 
         {activity.requiresRegistration && (
           <TabsContent value="inscriptions">

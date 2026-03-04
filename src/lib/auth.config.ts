@@ -28,7 +28,8 @@ export const authConfig: NextAuthConfig = {
       if (
         pathname === "/api/presences" ||
         pathname === "/api/retours" ||
-        pathname === "/api/seed"
+        pathname === "/api/seed" ||
+        pathname === "/api/activites/by-token"
       ) {
         return true;
       }
@@ -43,8 +44,6 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
-        token.serviceId = (user as any).serviceId ?? null;
-        token.serviceName = (user as any).serviceName ?? null;
       }
       return token;
     },
@@ -52,8 +51,6 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         session.user.id = token.sub!;
         session.user.role = token.role as any;
-        session.user.serviceId = (token.serviceId as string) ?? null;
-        session.user.serviceName = (token.serviceName as string) ?? null;
       }
       return session;
     },

@@ -14,10 +14,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Find the activity by access token
-  const activity = await prisma.activity.findUnique({
+  // Check if this is a session access token
+  const sessionRecord = await prisma.activitySession.findUnique({
     where: { accessToken: validation.data.accessToken },
+    include: { activity: true },
   });
+
+  let activity;
+  let sessionId: string | null = null;
+
+  if (sessionRecord) {
+    activity = sessionRecord.activity;
+    sessionId = sessionRecord.id;
+  } else {
+    // Find the activity by access token
+    activity = await prisma.activity.findUnique({
+      where: { accessToken: validation.data.accessToken },
+    });
+  }
 
   if (!activity) {
     return NextResponse.json(
@@ -33,17 +47,39 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const data = validation.data;
+
+  if (data.feedbackType === "SERVICE") {
+    // SERVICE feedback
+    const feedback = await prisma.feedback.create({
+      data: {
+        feedbackType: "SERVICE",
+        satisfactionRating: data.satisfactionRating!,
+        informationClarity: data.informationClarity!,
+        improvementSuggestion: data.improvementSuggestion || null,
+        participantName: data.participantName || null,
+        participantEmail: data.participantEmail || null,
+        activityId: activity.id,
+        sessionId,
+      },
+    });
+    return NextResponse.json(feedback, { status: 201 });
+  }
+
+  // FORMATION feedback (default)
   const feedback = await prisma.feedback.create({
     data: {
-      overallRating: validation.data.overallRating,
-      contentRating: validation.data.contentRating,
-      organizationRating: validation.data.organizationRating,
-      comment: validation.data.comment || null,
-      suggestions: validation.data.suggestions || null,
-      wouldRecommend: validation.data.wouldRecommend,
-      participantName: validation.data.participantName || null,
-      participantEmail: validation.data.participantEmail || null,
+      feedbackType: "FORMATION",
+      overallRating: data.overallRating!,
+      contentRating: data.contentRating!,
+      organizationRating: data.organizationRating!,
+      comment: data.comment || null,
+      suggestions: data.suggestions || null,
+      wouldRecommend: data.wouldRecommend ?? true,
+      participantName: data.participantName || null,
+      participantEmail: data.participantEmail || null,
       activityId: activity.id,
+      sessionId,
     },
   });
 

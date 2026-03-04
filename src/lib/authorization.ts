@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 
 export type SessionUser = {
@@ -6,8 +7,6 @@ export type SessionUser = {
   name: string;
   email: string;
   role: Role;
-  serviceId: string | null;
-  serviceName: string | null;
 };
 
 export async function requireAuth(): Promise<SessionUser> {
@@ -30,10 +29,30 @@ export async function requireAdmin(): Promise<SessionUser> {
   return requireRole(Role.ADMIN);
 }
 
+export async function getUserServiceIds(userId: string): Promise<string[]> {
+  const userServices = await prisma.userService.findMany({
+    where: { userId },
+    select: { serviceId: true },
+  });
+  return userServices.map((us) => us.serviceId);
+}
+
+export async function userCanAccessService(userId: string, serviceId: string): Promise<boolean> {
+  const userService = await prisma.userService.findUnique({
+    where: {
+      userId_serviceId: { userId, serviceId },
+    },
+  });
+  return !!userService;
+}
+
 export async function requireServiceManager(serviceId: string): Promise<SessionUser> {
   const user = await requireAuth();
   if (user.role === Role.ADMIN) return user;
-  if (user.role === Role.RESPONSABLE_SERVICE && user.serviceId === serviceId) return user;
+  if (user.role === Role.RESPONSABLE_SERVICE) {
+    const hasAccess = await userCanAccessService(user.id, serviceId);
+    if (hasAccess) return user;
+  }
   throw new AuthorizationError("Accès insuffisant", 403);
 }
 

@@ -2,32 +2,30 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Star, ThumbsUp } from "lucide-react";
+import { Download, Star, ThumbsUp, CheckCircle } from "lucide-react";
 
 interface Feedback {
   id: string;
-  overallRating: number;
-  contentRating: number;
-  organizationRating: number;
+  overallRating: number | null;
+  contentRating: number | null;
+  organizationRating: number | null;
   comment: string | null;
   suggestions: string | null;
   wouldRecommend: boolean;
   participantName: string | null;
   participantEmail: string | null;
+  feedbackType: string | null;
+  satisfactionRating: number | null;
+  informationClarity: boolean | null;
+  improvementSuggestion: string | null;
   createdAt: string | Date;
-}
-
-interface FeedbackStats {
-  avgOverall: string;
-  avgContent: string;
-  avgOrganization: string;
-  recommendPercent: number;
 }
 
 interface FeedbackListProps {
   feedbacks: Feedback[];
-  stats: FeedbackStats | null;
+  stats: any;
   activityId: string;
+  activityType?: string;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -47,7 +45,9 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps) {
+export function FeedbackList({ feedbacks, stats, activityId, activityType }: FeedbackListProps) {
+  const isService = activityType === "SERVICE";
+
   function handleExport() {
     window.open(
       `/api/activites/${activityId}/export?format=csv&type=feedbacks`,
@@ -59,43 +59,68 @@ export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps
     <div className="space-y-4">
       {/* Stats Summary */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-sm text-muted-foreground">Note globale</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
-                <span className="font-bold">{stats.avgOverall}</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-sm text-muted-foreground">Contenu</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
-                <span className="font-bold">{stats.avgContent}</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-sm text-muted-foreground">Organisation</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
-                <span className="font-bold">{stats.avgOrganization}</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-sm text-muted-foreground">Recommandent</p>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <ThumbsUp className="h-4 w-4 text-[#2980B9]" />
-                <span className="font-bold">{stats.recommendPercent}%</span>
-              </div>
-            </CardContent>
-          </Card>
+        <div className={`grid grid-cols-2 ${isService ? "sm:grid-cols-2" : "sm:grid-cols-4"} gap-4`}>
+          {isService ? (
+            <>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Satisfaction</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
+                    <span className="font-bold">{stats.avgSatisfaction || "N/A"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Clarté</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <CheckCircle className="h-4 w-4 text-[#2980B9]" />
+                    <span className="font-bold">{stats.clarityPercent ?? "N/A"}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Note globale</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
+                    <span className="font-bold">{stats.avgOverall || "N/A"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Contenu</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
+                    <span className="font-bold">{stats.avgContent || "N/A"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Organisation</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <Star className="h-4 w-4 fill-[#D4A017] text-[#D4A017]" />
+                    <span className="font-bold">{stats.avgOrganization || "N/A"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Recommandent</p>
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    <ThumbsUp className="h-4 w-4 text-[#2980B9]" />
+                    <span className="font-bold">{stats.recommendPercent ?? "N/A"}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       )}
 
@@ -135,26 +160,48 @@ export function FeedbackList({ feedbacks, stats, activityId }: FeedbackListProps
                         })}
                       </p>
                     </div>
-                    <StarRating rating={feedback.overallRating} />
+                    {feedback.feedbackType === "SERVICE" ? (
+                      <StarRating rating={feedback.satisfactionRating || 0} />
+                    ) : (
+                      <StarRating rating={feedback.overallRating || 0} />
+                    )}
                   </div>
 
-                  <div className="flex gap-4 text-xs text-muted-foreground">
-                    <span>Contenu: {feedback.contentRating}/5</span>
-                    <span>Organisation: {feedback.organizationRating}/5</span>
-                    <span>
-                      {feedback.wouldRecommend
-                        ? "Recommande"
-                        : "Ne recommande pas"}
-                    </span>
-                  </div>
+                  {feedback.feedbackType === "SERVICE" ? (
+                    <div className="space-y-1">
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span>Satisfaction: {feedback.satisfactionRating}/5</span>
+                        <span>
+                          Clarté: {feedback.informationClarity ? "Oui" : "Non"}
+                        </span>
+                      </div>
+                      {feedback.improvementSuggestion && (
+                        <p className="text-sm">
+                          <strong>Améliorations :</strong> {feedback.improvementSuggestion}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        <span>Contenu: {feedback.contentRating}/5</span>
+                        <span>Organisation: {feedback.organizationRating}/5</span>
+                        <span>
+                          {feedback.wouldRecommend
+                            ? "Recommande"
+                            : "Ne recommande pas"}
+                        </span>
+                      </div>
 
-                  {feedback.comment && (
-                    <p className="text-sm">{feedback.comment}</p>
-                  )}
-                  {feedback.suggestions && (
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Suggestions :</strong> {feedback.suggestions}
-                    </p>
+                      {feedback.comment && (
+                        <p className="text-sm">{feedback.comment}</p>
+                      )}
+                      {feedback.suggestions && (
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Suggestions :</strong> {feedback.suggestions}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               ))}

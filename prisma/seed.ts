@@ -38,7 +38,7 @@ async function main() {
   const hashedPassword = await bcrypt.hash("password123", 12);
 
   // Create super admin (centralized, sees all services)
-  await prisma.user.upsert({
+  const superAdmin = await prisma.user.upsert({
     where: { email: "superadmin@semecity.bj" },
     update: { role: Role.ADMIN },
     create: {
@@ -46,31 +46,15 @@ async function main() {
       email: "superadmin@semecity.bj",
       password: hashedPassword,
       role: Role.ADMIN,
-      serviceId: null,
       emailVerified: new Date(),
     },
   });
 
   // Create admin users (global admins, no service)
   const admins = [
-    {
-      name: "Admin IMA Lingua",
-      email: "admin.lingua@semecity.bj",
-      role: Role.ADMIN,
-      serviceId: null,
-    },
-    {
-      name: "Admin Career Center",
-      email: "admin.career@semecity.bj",
-      role: Role.ADMIN,
-      serviceId: null,
-    },
-    {
-      name: "Admin Recrutement",
-      email: "admin.recrutement@semecity.bj",
-      role: Role.ADMIN,
-      serviceId: null,
-    },
+    { name: "Admin IMA Lingua", email: "admin.lingua@semecity.bj" },
+    { name: "Admin Career Center", email: "admin.career@semecity.bj" },
+    { name: "Admin Recrutement", email: "admin.recrutement@semecity.bj" },
   ];
 
   for (const admin of admins) {
@@ -80,41 +64,56 @@ async function main() {
       create: {
         ...admin,
         password: hashedPassword,
+        role: Role.ADMIN,
         emailVerified: new Date(),
       },
     });
   }
 
-  // Create a responsable per service
+  // Create a responsable per service with UserService
   const responsables = [
     {
       name: "Responsable IMA Lingua",
       email: "resp.lingua@semecity.bj",
-      role: Role.RESPONSABLE_SERVICE,
-      serviceId: services[0].id,
+      serviceIndex: 0,
     },
     {
       name: "Responsable Career Center",
       email: "resp.career@semecity.bj",
-      role: Role.RESPONSABLE_SERVICE,
-      serviceId: services[1].id,
+      serviceIndex: 1,
     },
     {
       name: "Responsable Recrutement",
       email: "resp.recrutement@semecity.bj",
-      role: Role.RESPONSABLE_SERVICE,
-      serviceId: services[2].id,
+      serviceIndex: 2,
     },
   ];
 
   for (const resp of responsables) {
-    await prisma.user.upsert({
+    const user = await prisma.user.upsert({
       where: { email: resp.email },
-      update: { role: Role.RESPONSABLE_SERVICE, serviceId: resp.serviceId },
+      update: { role: Role.RESPONSABLE_SERVICE },
       create: {
-        ...resp,
+        name: resp.name,
+        email: resp.email,
         password: hashedPassword,
+        role: Role.RESPONSABLE_SERVICE,
         emailVerified: new Date(),
+      },
+    });
+
+    // Create UserService link
+    await prisma.userService.upsert({
+      where: {
+        userId_serviceId: {
+          userId: user.id,
+          serviceId: services[resp.serviceIndex].id,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        serviceId: services[resp.serviceIndex].id,
       },
     });
   }

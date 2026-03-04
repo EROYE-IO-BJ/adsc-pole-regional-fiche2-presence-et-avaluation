@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -11,6 +12,16 @@ const roleLabels: Record<string, string> = {
 
 export default async function SettingsPage() {
   const session = await auth();
+
+  // Load user services from DB
+  const userServices = session?.user?.id
+    ? await prisma.userService.findMany({
+        where: { userId: session.user.id },
+        select: { service: { select: { name: true } } },
+      })
+    : [];
+
+  const serviceNames = userServices.map((us) => us.service.name);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -38,10 +49,12 @@ export default async function SettingsPage() {
               {roleLabels[session?.user?.role || ""] || session?.user?.role}
             </Badge>
           </div>
-          {session?.user?.serviceName && (
+          {serviceNames.length > 0 && (
             <div>
-              <p className="text-sm text-muted-foreground">Service</p>
-              <p className="font-medium">{session.user.serviceName}</p>
+              <p className="text-sm text-muted-foreground">
+                {serviceNames.length === 1 ? "Service" : "Services"}
+              </p>
+              <p className="font-medium">{serviceNames.join(", ")}</p>
             </div>
           )}
         </CardContent>

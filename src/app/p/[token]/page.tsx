@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ClipboardList, MessageSquare } from "lucide-react";
+import { ClipboardList, MessageSquare, CalendarDays, MapPin } from "lucide-react";
 
 export default async function PublicLandingPage({
   params,
@@ -10,10 +10,23 @@ export default async function PublicLandingPage({
 }) {
   const { token } = await params;
 
-  const activity = await prisma.activity.findUnique({
+  // Check if token is for a session
+  const sessionRecord = await prisma.activitySession.findUnique({
     where: { accessToken: token },
-    select: { id: true, title: true, date: true, location: true, status: true, requiresRegistration: true },
+    include: {
+      activity: {
+        select: { id: true, title: true, date: true, location: true, status: true, type: true, requiresRegistration: true },
+      },
+    },
   });
+
+  // Check if token is for an activity
+  const activity = sessionRecord
+    ? sessionRecord.activity
+    : await prisma.activity.findUnique({
+        where: { accessToken: token },
+        select: { id: true, title: true, date: true, location: true, status: true, type: true, requiresRegistration: true },
+      });
 
   if (!activity) {
     notFound();
@@ -32,21 +45,105 @@ export default async function PublicLandingPage({
     );
   }
 
+  const isFormation = activity.type === "FORMATION";
+  const isSession = !!sessionRecord;
+
+  // For FORMATION activities with sessions (not a session token), show session list
+  if (isFormation && !isSession) {
+    const sessions = await prisma.activitySession.findMany({
+      where: { activityId: activity.id },
+      orderBy: { date: "asc" },
+    });
+
+    if (sessions.length > 0) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-[#14355A] to-[#7DD3D0] flex items-center justify-center p-4">
+          <div className="w-full max-w-md space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold text-white">{activity.title}</h1>
+              <p className="text-white/80">Choisissez une séance</p>
+            </div>
+
+            <div className="space-y-3">
+              {sessions.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/p/${s.accessToken}`}
+                  className="flex items-center gap-4 rounded-xl bg-white p-5 shadow-sm border hover:shadow-md transition-shadow"
+                >
+                  <div className="rounded-full bg-[#7DD3D0]/20 p-3">
+                    <CalendarDays className="h-6 w-6 text-[#2980B9]" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-gray-900">
+                      {s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      {new Date(s.date).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    {s.location && (
+                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                        <MapPin className="h-3 w-3" />
+                        {s.location}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+
+              {/* Global activity links */}
+              <div className="border-t border-white/20 pt-3">
+                <Link
+                  href={`/p/${token}/retour`}
+                  className="flex items-center gap-4 rounded-xl bg-white p-5 shadow-sm border hover:shadow-md transition-shadow"
+                >
+                  <div className="rounded-full bg-[#D4A017]/20 p-3">
+                    <MessageSquare className="h-6 w-6 text-[#D4A017]" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-gray-900">Avis global</h2>
+                    <p className="text-sm text-gray-500">Évaluer l&apos;activité dans son ensemble</p>
+                  </div>
+                </Link>
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-white/50">Sèmè City</p>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // Default: show presence + feedback links
+  const displayTitle = isSession
+    ? `${activity.title} - ${sessionRecord.title || `Séance du ${new Date(sessionRecord.date).toLocaleDateString("fr-FR")}`}`
+    : activity.title;
+
+  const displayDate = isSession ? sessionRecord.date : activity.date;
+  const displayLocation = isSession ? sessionRecord.location || activity.location : activity.location;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#14355A] to-[#7DD3D0] flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Activity info */}
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-white">{activity.title}</h1>
+          <h1 className="text-2xl font-bold text-white">{displayTitle}</h1>
           <p className="text-white/80">
-            {new Date(activity.date).toLocaleDateString("fr-FR", {
+            {new Date(displayDate).toLocaleDateString("fr-FR", {
               day: "numeric",
               month: "long",
               year: "numeric",
             })}
           </p>
-          {activity.location && (
-            <p className="text-sm text-white/60">{activity.location}</p>
+          {displayLocation && (
+            <p className="text-sm text-white/60">{displayLocation}</p>
           )}
         </div>
 

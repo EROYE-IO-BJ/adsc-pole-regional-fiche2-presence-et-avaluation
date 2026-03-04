@@ -25,9 +25,12 @@ export async function GET(
       email: true,
       role: true,
       emailVerified: true,
-      serviceId: true,
-      service: { select: { id: true, name: true } },
       createdAt: true,
+      userServices: {
+        select: {
+          service: { select: { id: true, name: true } },
+        },
+      },
       _count: { select: { createdActivities: true, registrations: true } },
     },
   });
@@ -68,22 +71,55 @@ export async function PUT(
     );
   }
 
-  const user = await prisma.user.update({
-    where: { id },
-    data: {
-      ...(validation.data.name && { name: validation.data.name }),
-      ...(validation.data.email && { email: validation.data.email }),
-      ...(validation.data.role && { role: validation.data.role }),
-      ...(validation.data.serviceId !== undefined && { serviceId: validation.data.serviceId }),
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      serviceId: true,
-      service: { select: { name: true } },
-    },
+  // Handle serviceIds array for multi-service
+  const serviceIds: string[] | undefined = body.serviceIds;
+
+  const user = await prisma.$transaction(async (tx) => {
+    const updated = await tx.user.update({
+      where: { id },
+      data: {
+        ...(validation.data.name && { name: validation.data.name }),
+        ...(validation.data.email && { email: validation.data.email }),
+        ...(validation.data.role && { role: validation.data.role }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    // Update UserService links if serviceIds provided
+    if (serviceIds !== undefined) {
+      // Remove all existing links
+      await tx.userService.deleteMany({ where: { userId: id } });
+      // Create new links
+      if (serviceIds.length > 0) {
+        await tx.userService.createMany({
+          data: serviceIds.map((serviceId) => ({
+            userId: id,
+            serviceId,
+          })),
+        });
+      }
+    }
+
+    // Return with services
+    return tx.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        userServices: {
+          select: {
+            service: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
   });
 
   return NextResponse.json(user);

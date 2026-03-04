@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, handleAuthError } from "@/lib/authorization";
+import { requireAuth, getUserServiceIds, handleAuthError } from "@/lib/authorization";
 import { Role } from "@prisma/client";
 
 // GET /api/activites/[id]/export?format=csv
@@ -33,10 +33,15 @@ export async function GET(
   }
 
   // Check access
-  const hasAccess =
-    user.role === Role.ADMIN ||
-    (user.role === Role.RESPONSABLE_SERVICE && activity.serviceId === user.serviceId) ||
-    (user.role === Role.INTERVENANT && activity.intervenantId === user.id);
+  let hasAccess = false;
+  if (user.role === Role.ADMIN) {
+    hasAccess = true;
+  } else if (user.role === Role.RESPONSABLE_SERVICE) {
+    const serviceIds = await getUserServiceIds(user.id);
+    hasAccess = serviceIds.includes(activity.serviceId);
+  } else if (user.role === Role.INTERVENANT) {
+    hasAccess = activity.intervenantId === user.id;
+  }
 
   if (!hasAccess) {
     return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
@@ -47,32 +52,58 @@ export async function GET(
     let filename: string;
 
     if (type === "feedbacks") {
-      const headers = [
-        "Nom",
-        "Email",
-        "Note globale",
-        "Note contenu",
-        "Note organisation",
-        "Recommande",
-        "Commentaire",
-        "Suggestions",
-        "Date",
-      ];
-      const rows = activity.feedbacks.map((f) => [
-        f.participantName || "",
-        f.participantEmail || "",
-        f.overallRating,
-        f.contentRating,
-        f.organizationRating,
-        f.wouldRecommend ? "Oui" : "Non",
-        `"${(f.comment || "").replace(/"/g, '""')}"`,
-        `"${(f.suggestions || "").replace(/"/g, '""')}"`,
-        new Date(f.createdAt).toLocaleDateString("fr-FR"),
-      ]);
-      csvContent =
-        headers.join(",") +
-        "\n" +
-        rows.map((r) => r.join(",")).join("\n");
+      // Check activity type for appropriate headers
+      const isService = activity.type === "SERVICE";
+
+      if (isService) {
+        const headers = [
+          "Nom",
+          "Email",
+          "Satisfaction",
+          "Informations claires",
+          "Améliorations",
+          "Date",
+        ];
+        const rows = activity.feedbacks.map((f) => [
+          f.participantName || "",
+          f.participantEmail || "",
+          f.satisfactionRating ?? "",
+          f.informationClarity !== null ? (f.informationClarity ? "Oui" : "Non") : "",
+          `"${(f.improvementSuggestion || "").replace(/"/g, '""')}"`,
+          new Date(f.createdAt).toLocaleDateString("fr-FR"),
+        ]);
+        csvContent =
+          headers.join(",") +
+          "\n" +
+          rows.map((r) => r.join(",")).join("\n");
+      } else {
+        const headers = [
+          "Nom",
+          "Email",
+          "Note globale",
+          "Note contenu",
+          "Note organisation",
+          "Recommande",
+          "Commentaire",
+          "Suggestions",
+          "Date",
+        ];
+        const rows = activity.feedbacks.map((f) => [
+          f.participantName || "",
+          f.participantEmail || "",
+          f.overallRating ?? "",
+          f.contentRating ?? "",
+          f.organizationRating ?? "",
+          f.wouldRecommend ? "Oui" : "Non",
+          `"${(f.comment || "").replace(/"/g, '""')}"`,
+          `"${(f.suggestions || "").replace(/"/g, '""')}"`,
+          new Date(f.createdAt).toLocaleDateString("fr-FR"),
+        ]);
+        csvContent =
+          headers.join(",") +
+          "\n" +
+          rows.map((r) => r.join(",")).join("\n");
+      }
       filename = `feedbacks-${activity.title.replace(/\s+/g, "-")}.csv`;
     } else {
       const headers = [

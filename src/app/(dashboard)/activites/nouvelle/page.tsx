@@ -30,21 +30,38 @@ type Service = {
   name: string;
 };
 
+type Program = {
+  id: string;
+  name: string;
+  serviceId: string;
+  service: { name: string };
+};
+
 export default function NewActivityPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [intervenants, setIntervenants] = useState<Intervenant[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [requiresRegistration, setRequiresRegistration] = useState(false);
+  const [activityType, setActivityType] = useState<"FORMATION" | "SERVICE">("FORMATION");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const isAdmin = session?.user?.role === "ADMIN";
+  const isResponsable = session?.user?.role === "RESPONSABLE_SERVICE";
 
   useEffect(() => {
     fetch("/api/intervenants").then((r) => r.json()).then(setIntervenants);
-    if (isAdmin) {
+    if (isAdmin || isResponsable) {
       fetch("/api/services").then((r) => r.json()).then(setServices);
     }
-  }, [isAdmin]);
+    fetch("/api/programs").then((r) => r.json()).then(setPrograms).catch(() => {});
+  }, [isAdmin, isResponsable]);
+
+  // Filter programs by selected service
+  const filteredPrograms = selectedServiceId
+    ? programs.filter((p) => p.serviceId === selectedServiceId)
+    : programs;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,12 +75,17 @@ export default function NewActivityPage() {
       date: formData.get("date") as string,
       location: formData.get("location") as string,
       status: formData.get("status") as string,
+      type: activityType,
       requiresRegistration,
       intervenantId: (formData.get("intervenantId") as string) || undefined,
     };
 
-    if (isAdmin) {
-      data.serviceId = formData.get("serviceId") as string;
+    if (isAdmin || isResponsable) {
+      data.serviceId = selectedServiceId || (formData.get("serviceId") as string);
+    }
+
+    if (activityType === "SERVICE") {
+      data.programId = (formData.get("programId") as string) || undefined;
     }
 
     const res = await fetch("/api/activites", {
@@ -105,6 +127,27 @@ export default function NewActivityPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Activity Type */}
+            <div className="space-y-2">
+              <Label>Type d&apos;activité *</Label>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant={activityType === "FORMATION" ? "default" : "outline"}
+                  onClick={() => setActivityType("FORMATION")}
+                >
+                  Formation / Coaching
+                </Button>
+                <Button
+                  type="button"
+                  variant={activityType === "SERVICE" ? "default" : "outline"}
+                  onClick={() => setActivityType("SERVICE")}
+                >
+                  Service
+                </Button>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="title">Titre *</Label>
               <Input
@@ -141,10 +184,16 @@ export default function NewActivityPage() {
               </div>
             </div>
 
-            {isAdmin && (
+            {/* Service selector for admin and responsable */}
+            {(isAdmin || isResponsable) && services.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="serviceId">Service *</Label>
-                <Select name="serviceId" required>
+                <Select
+                  name="serviceId"
+                  required
+                  value={selectedServiceId}
+                  onValueChange={setSelectedServiceId}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un service" />
                   </SelectTrigger>
@@ -156,6 +205,33 @@ export default function NewActivityPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* Program selector for SERVICE type */}
+            {activityType === "SERVICE" && (
+              <div className="space-y-2">
+                <Label htmlFor="programId">Programme *</Label>
+                <Select name="programId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un programme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPrograms.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {filteredPrograms.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Aucun programme disponible.{" "}
+                    <Link href="/admin/programmes/nouveau" className="text-primary underline">
+                      Créer un programme
+                    </Link>
+                  </p>
+                )}
               </div>
             )}
 

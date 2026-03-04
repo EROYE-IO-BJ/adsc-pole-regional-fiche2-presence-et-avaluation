@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserServiceIds } from "@/lib/authorization";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,17 +14,23 @@ const statusLabels: Record<string, { label: string; variant: "default" | "succes
   CLOSED: { label: "Clôturée", variant: "warning" },
 };
 
+const typeLabels: Record<string, string> = {
+  FORMATION: "Formation",
+  SERVICE: "Service",
+};
+
 export default async function ActivitiesPage() {
   const session = await auth();
   const userRole = session?.user?.role;
-  const serviceId = session?.user?.serviceId;
+  const userId = session?.user?.id;
 
   // Build where clause based on role
   const where: any = {};
-  if (userRole === Role.RESPONSABLE_SERVICE && serviceId) {
-    where.serviceId = serviceId;
+  if (userRole === Role.RESPONSABLE_SERVICE && userId) {
+    const serviceIds = await getUserServiceIds(userId);
+    where.serviceId = { in: serviceIds };
   } else if (userRole === Role.INTERVENANT) {
-    where.intervenantId = session?.user?.id;
+    where.intervenantId = userId;
   }
   // ADMIN: no filter
 
@@ -45,7 +52,7 @@ export default async function ActivitiesPage() {
         <div>
           <h1 className="text-2xl font-bold">Activités</h1>
           <p className="text-muted-foreground">
-            {userRole === Role.ADMIN ? "Toutes les activités" : "Activités de votre service"}
+            {userRole === Role.ADMIN ? "Toutes les activités" : "Activités de vos services"}
           </p>
         </div>
         {canCreate && (
@@ -89,6 +96,7 @@ export default async function ActivitiesPage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg">{activity.title}</h3>
                           <Badge variant={status.variant}>{status.label}</Badge>
+                          <Badge variant="secondary">{typeLabels[activity.type] || activity.type}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">

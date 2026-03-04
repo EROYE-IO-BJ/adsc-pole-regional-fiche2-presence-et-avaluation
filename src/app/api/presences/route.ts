@@ -14,10 +14,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Find the activity by access token
-  const activity = await prisma.activity.findUnique({
+  // Check if this is a session access token
+  const sessionRecord = await prisma.activitySession.findUnique({
     where: { accessToken: validation.data.accessToken },
+    include: { activity: true },
   });
+
+  let activity;
+  let sessionId: string | null = null;
+
+  if (sessionRecord) {
+    activity = sessionRecord.activity;
+    sessionId = sessionRecord.id;
+  } else {
+    // Find the activity by access token
+    activity = await prisma.activity.findUnique({
+      where: { accessToken: validation.data.accessToken },
+    });
+  }
 
   if (!activity) {
     return NextResponse.json(
@@ -35,7 +49,6 @@ export async function POST(request: NextRequest) {
 
   // Check if activity requires registration
   if (activity.requiresRegistration) {
-    // Check if the participant is registered (by email match with a registered user)
     const registeredUser = await prisma.user.findUnique({
       where: { email: validation.data.email },
     });
@@ -90,6 +103,7 @@ export async function POST(request: NextRequest) {
       organization: validation.data.organization || null,
       signature: validation.data.signature || null,
       activityId: activity.id,
+      sessionId,
     },
   });
 

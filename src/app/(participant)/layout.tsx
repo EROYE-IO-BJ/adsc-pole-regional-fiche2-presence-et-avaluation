@@ -21,7 +21,7 @@ export default async function ParticipantLayout({
   return (
     <DashboardShell
       userName={session.user.name}
-      serviceName={null}
+      serviceNames={[]}
       role={session.user.role}
     >
       {children}

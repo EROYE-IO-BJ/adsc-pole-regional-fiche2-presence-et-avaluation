@@ -79,10 +79,19 @@ export async function POST(request: NextRequest) {
         email: invitation.email,
         password: hashedPassword,
         role: invitation.role,
-        serviceId: invitation.serviceId,
         emailVerified: new Date(), // Auto-verified through invitation
       },
     });
+
+    // Create UserService link if serviceId is set
+    if (invitation.serviceId) {
+      await tx.userService.create({
+        data: {
+          userId: newUser.id,
+          serviceId: invitation.serviceId,
+        },
+      });
+    }
 
     await tx.invitation.update({
       where: { id: invitation.id },

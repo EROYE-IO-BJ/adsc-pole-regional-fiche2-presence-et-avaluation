@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, handleAuthError } from "@/lib/authorization";
+import { requireAuth, getUserServiceIds, handleAuthError } from "@/lib/authorization";
 import { Role } from "@prisma/client";
 
 // GET /api/presences/[activityId] - List attendance for an activity
@@ -28,10 +28,15 @@ export async function GET(
   }
 
   // Check permissions
-  const hasAccess =
-    user.role === Role.ADMIN ||
-    (user.role === Role.RESPONSABLE_SERVICE && activity.serviceId === user.serviceId) ||
-    (user.role === Role.INTERVENANT && activity.intervenantId === user.id);
+  let hasAccess = false;
+  if (user.role === Role.ADMIN) {
+    hasAccess = true;
+  } else if (user.role === Role.RESPONSABLE_SERVICE) {
+    const serviceIds = await getUserServiceIds(user.id);
+    hasAccess = serviceIds.includes(activity.serviceId);
+  } else if (user.role === Role.INTERVENANT) {
+    hasAccess = activity.intervenantId === user.id;
+  }
 
   if (!hasAccess) {
     return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });

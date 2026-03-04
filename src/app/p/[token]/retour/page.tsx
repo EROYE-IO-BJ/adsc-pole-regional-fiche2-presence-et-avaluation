@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { ServiceFeedbackForm } from "@/components/retours/service-feedback-form";
 
 function StarRatingInput({
   label,
@@ -50,12 +51,35 @@ export default function FeedbackPage() {
   const params = useParams();
   const token = params.token as string;
   const [loading, setLoading] = useState(false);
+  const [activityType, setActivityType] = useState<string | null>(null);
+  const [loadingType, setLoadingType] = useState(true);
   const [overallRating, setOverallRating] = useState(0);
   const [contentRating, setContentRating] = useState(0);
   const [organizationRating, setOrganizationRating] = useState(0);
   const [wouldRecommend, setWouldRecommend] = useState(true);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // Detect activity type by checking the token
+  useEffect(() => {
+    async function detectType() {
+      try {
+        // Try to get activity info from the presence page API
+        const res = await fetch(`/api/activites/by-token?token=${token}`);
+        if (res.ok) {
+          const data = await res.json();
+          setActivityType(data.type || "FORMATION");
+        } else {
+          // Default to FORMATION
+          setActivityType("FORMATION");
+        }
+      } catch {
+        setActivityType("FORMATION");
+      }
+      setLoadingType(false);
+    }
+    detectType();
+  }, [token]);
+
+  async function handleFormationSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (overallRating === 0 || contentRating === 0 || organizationRating === 0) {
@@ -68,6 +92,7 @@ export default function FeedbackPage() {
     const formData = new FormData(e.currentTarget);
 
     const data = {
+      feedbackType: "FORMATION" as const,
       overallRating,
       contentRating,
       organizationRating,
@@ -94,6 +119,34 @@ export default function FeedbackPage() {
     }
   }
 
+  if (loadingType) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // SERVICE type feedback
+  if (activityType === "SERVICE") {
+    return (
+      <div className="min-h-screen bg-muted p-4">
+        <div className="mx-auto max-w-lg space-y-4">
+          <Link
+            href={`/p/${token}`}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour
+          </Link>
+
+          <ServiceFeedbackForm token={token} />
+        </div>
+      </div>
+    );
+  }
+
+  // FORMATION type feedback (default)
   return (
     <div className="min-h-screen bg-muted p-4">
       <div className="mx-auto max-w-lg space-y-4">
@@ -110,7 +163,7 @@ export default function FeedbackPage() {
             <CardTitle>Votre avis</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleFormationSubmit} className="space-y-5">
               {/* Ratings */}
               <StarRatingInput
                 label="Note globale *"

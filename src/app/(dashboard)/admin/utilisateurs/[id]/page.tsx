@@ -29,8 +29,7 @@ type UserDetail = {
   email: string;
   role: string;
   emailVerified: string | null;
-  serviceId: string | null;
-  service: { id: string; name: string } | null;
+  userServices: { service: { id: string; name: string } }[];
   createdAt: string;
   _count: { createdActivities: number; registrations: number };
 };
@@ -54,6 +53,8 @@ export default function UserDetailPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -62,23 +63,36 @@ export default function UserDetailPage() {
     ]).then(([userData, servicesData]) => {
       setUser(userData);
       setServices(servicesData);
+      setSelectedRole(userData.role);
+      setSelectedServiceIds(
+        userData.userServices?.map((us: any) => us.service.id) || []
+      );
       setLoading(false);
     });
   }, [params.id]);
+
+  function toggleService(serviceId: string) {
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
 
     const formData = new FormData(e.currentTarget);
-    const role = formData.get("role") as string;
-    const serviceId = formData.get("serviceId") as string;
 
     const data = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
-      role,
-      serviceId: role === "ADMIN" || role === "PARTICIPANT" ? null : serviceId || null,
+      role: selectedRole,
+      serviceIds:
+        selectedRole === "ADMIN" || selectedRole === "PARTICIPANT"
+          ? []
+          : selectedServiceIds,
     };
 
     const res = await fetch(`/api/users/${params.id}`, {
@@ -123,6 +137,8 @@ export default function UserDetailPage() {
     return <div className="text-center py-12 text-muted-foreground">Utilisateur non trouvé</div>;
   }
 
+  const showServices = selectedRole === "RESPONSABLE_SERVICE" || selectedRole === "INTERVENANT";
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-4">
@@ -164,7 +180,7 @@ export default function UserDetailPage() {
 
             <div className="space-y-2">
               <Label htmlFor="role">Rôle</Label>
-              <Select name="role" defaultValue={user.role}>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -177,22 +193,30 @@ export default function UserDetailPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="serviceId">Service</Label>
-              <Select name="serviceId" defaultValue={user.serviceId || "none"}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Aucun service" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun service</SelectItem>
-                  {services.map((s: Service) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
+            {showServices && (
+              <div className="space-y-2">
+                <Label>Services</Label>
+                <div className="space-y-2 rounded-md border p-3">
+                  {services.map((s) => (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedServiceIds.includes(s.id)}
+                        onChange={() => toggleService(s.id)}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <span className="text-sm">{s.name}</span>
+                    </label>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  {services.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Aucun service disponible</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={saving}>

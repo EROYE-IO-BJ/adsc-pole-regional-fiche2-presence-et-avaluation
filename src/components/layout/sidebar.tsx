@@ -14,6 +14,7 @@ import {
   Mail,
   History,
   ClipboardList,
+  FolderKanban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ function getNavigation(role: string): NavItem[] {
         { name: "Activités", href: "/activites", icon: CalendarDays },
         { name: "Nouvelle activité", href: "/activites/nouvelle", icon: Plus },
         { name: "Services", href: "/admin/services", icon: Building2 },
+        { name: "Programmes", href: "/admin/programmes", icon: FolderKanban },
         { name: "Utilisateurs", href: "/admin/utilisateurs", icon: Users },
         { name: "Invitations", href: "/admin/invitations", icon: Mail },
         { name: "Paramètres", href: "/parametres", icon: Settings },
@@ -42,6 +44,7 @@ function getNavigation(role: string): NavItem[] {
         { name: "Tableau de bord", href: "/tableau-de-bord", icon: LayoutDashboard },
         { name: "Activités", href: "/activites", icon: CalendarDays },
         { name: "Nouvelle activité", href: "/activites/nouvelle", icon: Plus },
+        { name: "Programmes", href: "/admin/programmes", icon: FolderKanban },
         { name: "Invitations", href: "/admin/invitations", icon: Mail },
         { name: "Paramètres", href: "/parametres", icon: Settings },
       ];
@@ -67,13 +70,13 @@ function getNavigation(role: string): NavItem[] {
 }
 
 interface SidebarProps {
-  serviceName: string | null;
+  serviceNames: string[];
   role: string;
   open: boolean;
   onClose: () => void;
 }
 
-export function Sidebar({ serviceName, role, open, onClose }: SidebarProps) {
+export function Sidebar({ serviceNames, role, open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const navigation = getNavigation(role);
 
@@ -83,6 +86,13 @@ export function Sidebar({ serviceName, role, open, onClose }: SidebarProps) {
     INTERVENANT: "Intervenant",
     PARTICIPANT: "Participant",
   };
+
+  const serviceLabel =
+    serviceNames.length === 0
+      ? roleLabels[role] || role
+      : serviceNames.length === 1
+        ? serviceNames[0]
+        : `${serviceNames.length} services`;
 
   return (
     <>
@@ -106,7 +116,7 @@ export function Sidebar({ serviceName, role, open, onClose }: SidebarProps) {
           <div>
             <h2 className="font-bold text-lg">Sèmè City</h2>
             <p className="text-xs text-muted-foreground truncate">
-              {serviceName || roleLabels[role] || role}
+              {serviceLabel}
             </p>
           </div>
           <Button

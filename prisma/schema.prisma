@@ -20,6 +20,11 @@ enum ActivityStatus {
   CLOSED
 }
 
+enum ActivityType {
+  FORMATION
+  SERVICE
+}
+
 model Service {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -28,8 +33,22 @@ model Service {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users      User[]
-  activities Activity[]
+  users        User[]
+  userServices UserService[]
+  activities   Activity[]
+  programs     Program[]
+}
+
+model UserService {
+  id        String   @id @default(cuid())
+  userId    String
+  serviceId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceId])
 }
 
 model User {
@@ -44,14 +63,28 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  service              Service?       @relation(fields: [serviceId], references: [id])
-  createdActivities    Activity[]     @relation("ActivityCreator")
-  intervenantActivities Activity[]    @relation("ActivityIntervenant")
-  accounts             Account[]
-  sessions             Session[]
-  registrations        Registration[]
-  sentInvitations      Invitation[]   @relation("InvitationSender")
-  receivedInvitation   Invitation?    @relation("InvitationReceiver")
+  service               Service?       @relation(fields: [serviceId], references: [id])
+  userServices          UserService[]
+  createdActivities     Activity[]     @relation("ActivityCreator")
+  intervenantActivities Activity[]     @relation("ActivityIntervenant")
+  intervenantSessions   ActivitySession[] @relation("SessionIntervenant")
+  accounts              Account[]
+  sessions              Session[]
+  registrations         Registration[]
+  sentInvitations       Invitation[]   @relation("InvitationSender")
+  receivedInvitation    Invitation?    @relation("InvitationReceiver")
+}
+
+model Program {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  serviceId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  service    Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  activities Activity[]
 }
 
 model Activity {
@@ -61,20 +94,41 @@ model Activity {
   date                  DateTime
   location              String?
   status                ActivityStatus @default(ACTIVE)
+  type                  ActivityType   @default(FORMATION)
   requiresRegistration  Boolean        @default(false)
   accessToken           String         @unique @default(cuid())
   serviceId             String
   createdById           String
   intervenantId         String?
+  programId             String?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
-  service       Service        @relation(fields: [serviceId], references: [id])
-  createdBy     User           @relation("ActivityCreator", fields: [createdById], references: [id])
-  intervenant   User?          @relation("ActivityIntervenant", fields: [intervenantId], references: [id])
+  service       Service          @relation(fields: [serviceId], references: [id])
+  createdBy     User             @relation("ActivityCreator", fields: [createdById], references: [id])
+  intervenant   User?            @relation("ActivityIntervenant", fields: [intervenantId], references: [id])
+  program       Program?         @relation(fields: [programId], references: [id])
+  sessions      ActivitySession[]
   attendances   Attendance[]
   feedbacks     Feedback[]
   registrations Registration[]
+}
+
+model ActivitySession {
+  id            String   @id @default(cuid())
+  title         String?
+  date          DateTime
+  location      String?
+  intervenantId String?
+  activityId    String
+  accessToken   String   @unique @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  activity    Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  intervenant User?        @relation("SessionIntervenant", fields: [intervenantId], references: [id])
+  attendances Attendance[]
+  feedbacks   Feedback[]
 }
 
 model Attendance {
@@ -86,27 +140,35 @@ model Attendance {
   organization String?
   signature    String?  @db.Text
   activityId   String
+  sessionId    String?
   createdAt    DateTime @default(now())
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activity Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  session  ActivitySession?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([activityId, email])
 }
 
 model Feedback {
-  id                 String   @id @default(cuid())
-  overallRating      Int      // 1-5
-  contentRating      Int      // 1-5
-  organizationRating Int      // 1-5
-  comment            String?  @db.Text
-  suggestions        String?  @db.Text
-  wouldRecommend     Boolean  @default(true)
-  participantName    String?
-  participantEmail   String?
-  activityId         String
-  createdAt          DateTime @default(now())
+  id                    String   @id @default(cuid())
+  overallRating         Int?     // 1-5 (FORMATION)
+  contentRating         Int?     // 1-5 (FORMATION)
+  organizationRating    Int?     // 1-5 (FORMATION)
+  comment               String?  @db.Text
+  suggestions           String?  @db.Text
+  wouldRecommend        Boolean  @default(true)
+  participantName       String?
+  participantEmail      String?
+  feedbackType          String?  // "FORMATION" or "SERVICE"
+  satisfactionRating    Int?     // 1-5 (SERVICE)
+  informationClarity    Boolean? // (SERVICE)
+  improvementSuggestion String?  @db.Text // (SERVICE)
+  activityId            String
+  sessionId             String?
+  createdAt             DateTime @default(now())
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activity Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  session  ActivitySession?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model Registration {

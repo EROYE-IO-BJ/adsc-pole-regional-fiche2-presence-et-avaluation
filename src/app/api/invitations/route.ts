@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole, handleAuthError } from "@/lib/authorization";
+import { requireRole, getUserServiceIds, userCanAccessService, handleAuthError } from "@/lib/authorization";
 import { createInvitationSchema } from "@/lib/validations/invitation";
 import { sendInvitationEmail } from "@/lib/email";
 import { Role } from "@prisma/client";
@@ -16,9 +16,10 @@ export async function GET() {
   }
 
   const where: any = {};
-  // Responsable only sees invitations for their service
+  // Responsable only sees invitations for their services
   if (user.role === Role.RESPONSABLE_SERVICE) {
-    where.serviceId = user.serviceId;
+    const serviceIds = await getUserServiceIds(user.id);
+    where.serviceId = { in: serviceIds };
   }
 
   const invitations = await prisma.invitation.findMany({
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   const { email, role, serviceId } = validation.data;
 
-  // Responsable can only invite INTERVENANT for their own service
+  // Responsable can only invite INTERVENANT for their own services
   if (user.role === Role.RESPONSABLE_SERVICE) {
     if (role !== "INTERVENANT") {
       return NextResponse.json(
@@ -63,11 +64,14 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    if (serviceId && serviceId !== user.serviceId) {
-      return NextResponse.json(
-        { error: "Vous ne pouvez inviter que pour votre service" },
-        { status: 403 }
-      );
+    if (serviceId) {
+      const hasAccess = await userCanAccessService(user.id, serviceId);
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: "Vous ne pouvez inviter que pour vos services" },
+          { status: 403 }
+        );
+      }
     }
   }
 
@@ -91,10 +95,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const resolvedServiceId =
-    role === "INTERVENANT" || role === "RESPONSABLE_SERVICE"
-      ? serviceId || user.serviceId
-      : null;
+  let resolvedServiceId: string | null = null;
+  if (role === "INTERVENANT" || role === "RESPONSABLE_SERVICE") {
+    if (serviceId) {
+      resolvedServiceId = serviceId;
+    } else if (user.role === Role.RESPONSABLE_SERVICE) {
+      const serviceIds = await getUserServiceIds(user.id);
+      resolvedServiceId = serviceIds[0] || null;
+    }
+  }
 
   const invitation = await prisma.invitation.create({
     data: {

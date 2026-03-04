@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, handleAuthError } from "@/lib/authorization";
+import { requireAuth, getUserServiceIds, userCanAccessService, handleAuthError } from "@/lib/authorization";
 import { updateActivitySchema } from "@/lib/validations/activity";
 import { Role } from "@prisma/client";
 
-function canAccessActivity(userRole: Role, userServiceId: string | null, userId: string, activity: any): boolean {
+async function canAccessActivity(userRole: Role, userId: string, activity: any): Promise<boolean> {
   switch (userRole) {
     case Role.ADMIN:
       return true;
     case Role.RESPONSABLE_SERVICE:
-      return activity.serviceId === userServiceId;
+      return userCanAccessService(userId, activity.serviceId);
     case Role.INTERVENANT:
       return activity.intervenantId === userId;
     case Role.PARTICIPANT:
@@ -41,10 +41,11 @@ export async function GET(
       createdBy: { select: { name: true } },
       intervenant: { select: { name: true } },
       service: { select: { name: true } },
+      program: { select: { id: true, name: true } },
     },
   });
 
-  if (!activity || !canAccessActivity(user.role, user.serviceId, user.id, activity)) {
+  if (!activity || !(await canAccessActivity(user.role, user.id, activity))) {
     return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
   }
 
@@ -76,9 +77,12 @@ export async function PUT(
     return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
   }
 
-  // Responsable can only edit activities of their service
-  if (user.role === Role.RESPONSABLE_SERVICE && existing.serviceId !== user.serviceId) {
-    return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
+  // Responsable can only edit activities of their services
+  if (user.role === Role.RESPONSABLE_SERVICE) {
+    const hasAccess = await userCanAccessService(user.id, existing.serviceId);
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
+    }
   }
 
   const body = await request.json();
@@ -108,6 +112,10 @@ export async function PUT(
       }),
       ...(validation.data.intervenantId !== undefined && {
         intervenantId: validation.data.intervenantId || null,
+      }),
+      ...(validation.data.type && { type: validation.data.type }),
+      ...(validation.data.programId !== undefined && {
+        programId: validation.data.programId || null,
       }),
     },
   });
@@ -139,8 +147,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
   }
 
-  if (user.role === Role.RESPONSABLE_SERVICE && existing.serviceId !== user.serviceId) {
-    return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
+  if (user.role === Role.RESPONSABLE_SERVICE) {
+    const hasAccess = await userCanAccessService(user.id, existing.serviceId);
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
+    }
   }
 
   await prisma.activity.delete({ where: { id } });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole, handleAuthError } from "@/lib/authorization";
+import { requireRole, getUserServiceIds, handleAuthError } from "@/lib/authorization";
 import { Role } from "@prisma/client";
 
 // GET /api/intervenants - List intervenants (optionally filtered by service)
@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
   const where: any = { role: Role.INTERVENANT };
 
   if (user.role === Role.RESPONSABLE_SERVICE) {
-    where.serviceId = user.serviceId;
+    const serviceIds = await getUserServiceIds(user.id);
+    where.userServices = { some: { serviceId: { in: serviceIds } } };
   } else if (serviceId) {
-    where.serviceId = serviceId;
+    where.userServices = { some: { serviceId } };
   }
 
   const intervenants = await prisma.user.findMany({
@@ -30,8 +31,11 @@ export async function GET(request: NextRequest) {
       id: true,
       name: true,
       email: true,
-      serviceId: true,
-      service: { select: { name: true } },
+      userServices: {
+        select: {
+          service: { select: { id: true, name: true } },
+        },
+      },
     },
     orderBy: { name: "asc" },
   });

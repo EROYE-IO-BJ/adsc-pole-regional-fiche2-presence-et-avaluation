@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserServiceIds } from "@/lib/authorization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Users, MessageSquare, TrendingUp } from "lucide-react";
 import Link from "next/link";
@@ -10,14 +11,15 @@ import { Role } from "@prisma/client";
 export default async function DashboardPage() {
   const session = await auth();
   const userRole = session?.user?.role;
-  const serviceId = session?.user?.serviceId;
+  const userId = session?.user?.id;
 
   // Build where clause based on role
   const activityWhere: any = {};
-  if (userRole === Role.RESPONSABLE_SERVICE && serviceId) {
-    activityWhere.serviceId = serviceId;
+  if (userRole === Role.RESPONSABLE_SERVICE && userId) {
+    const serviceIds = await getUserServiceIds(userId);
+    activityWhere.serviceId = { in: serviceIds };
   } else if (userRole === Role.INTERVENANT) {
-    activityWhere.intervenantId = session?.user?.id;
+    activityWhere.intervenantId = userId;
   }
   // ADMIN: no filter (sees all)
 
@@ -84,7 +86,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Tableau de bord</h1>
           <p className="text-muted-foreground">
-            Vue d&apos;ensemble {userRole === Role.ADMIN ? "globale" : "de votre service"}
+            Vue d&apos;ensemble {userRole === Role.ADMIN ? "globale" : "de vos services"}
           </p>
         </div>
         {(userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE) && (
@@ -114,7 +116,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <DashboardCharts serviceId={serviceId ?? undefined} />
+      <DashboardCharts />
 
       {/* Recent Activities */}
       <Card>

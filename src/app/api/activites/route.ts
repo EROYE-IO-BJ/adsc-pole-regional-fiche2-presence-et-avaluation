@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireRole, handleAuthError } from "@/lib/authorization";
+import { requireAuth, requireRole, getUserServiceIds, userCanAccessService, handleAuthError } from "@/lib/authorization";
 import { createActivitySchema } from "@/lib/validations/activity";
 import { Role } from "@prisma/client";
 
@@ -20,10 +20,11 @@ export async function GET() {
     case Role.ADMIN:
       // Admin sees all activities
       break;
-    case Role.RESPONSABLE_SERVICE:
-      // Responsable sees activities of their service
-      where = { serviceId: user.serviceId };
+    case Role.RESPONSABLE_SERVICE: {
+      const serviceIds = await getUserServiceIds(user.id);
+      where = { serviceId: { in: serviceIds } };
       break;
+    }
     case Role.INTERVENANT:
       // Intervenant sees activities they're assigned to
       where = { intervenantId: user.id };
@@ -71,7 +72,6 @@ export async function POST(request: NextRequest) {
   // Determine serviceId
   let serviceId: string;
   if (user.role === Role.ADMIN) {
-    // Admin must provide serviceId in the body
     serviceId = body.serviceId;
     if (!serviceId) {
       return NextResponse.json(
@@ -80,7 +80,27 @@ export async function POST(request: NextRequest) {
       );
     }
   } else {
-    serviceId = user.serviceId!;
+    // RESPONSABLE_SERVICE: must provide serviceId and must have access
+    serviceId = body.serviceId;
+    if (!serviceId) {
+      // Fallback: use first service
+      const serviceIds = await getUserServiceIds(user.id);
+      if (serviceIds.length === 0) {
+        return NextResponse.json(
+          { error: "Aucun service associé" },
+          { status: 400 }
+        );
+      }
+      serviceId = serviceIds[0];
+    } else {
+      const hasAccess = await userCanAccessService(user.id, serviceId);
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: "Accès insuffisant à ce service" },
+          { status: 403 }
+        );
+      }
+    }
   }
 
   const activity = await prisma.activity.create({
@@ -90,8 +110,10 @@ export async function POST(request: NextRequest) {
       date: new Date(validation.data.date),
       location: validation.data.location || null,
       status: validation.data.status,
+      type: validation.data.type,
       requiresRegistration: validation.data.requiresRegistration,
       intervenantId: validation.data.intervenantId || null,
+      programId: validation.data.programId || null,
       serviceId,
       createdById: user.id,
     },
