@@ -58,10 +58,9 @@ export default function Home() {
             Comptes de démonstration
           </h2>
           <p className="text-sm text-white/60 text-center">
-            Mot de passe pour tous les comptes :{" "}
-            <code className="bg-white/20 px-2 py-0.5 rounded text-white font-mono">
-              password123
-            </code>
+            Format : <span className="text-white/80">email</span>{" "}
+            <span className="text-white/40">|</span>{" "}
+            <span className="text-white/80">mot de passe</span>
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -82,9 +81,15 @@ export default function Home() {
                       <span className="text-white/70 block text-xs">
                         {account.name}
                       </span>
-                      <code className="text-white/90 font-mono text-xs">
-                        {account.email}
-                      </code>
+                      <div className="flex items-center gap-2">
+                        <code className="text-white/90 font-mono text-xs">
+                          {account.email}
+                        </code>
+                        <span className="text-white/40 text-xs">|</span>
+                        <code className="text-white/60 font-mono text-xs">
+                          password123
+                        </code>
+                      </div>
                     </li>
                   ))}
                 </ul>
