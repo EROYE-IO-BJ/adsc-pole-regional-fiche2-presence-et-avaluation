@@ -21,16 +21,30 @@ export async function POST(request: NextRequest) {
   });
 
   let activity;
-  let sessionId: string | null = null;
+  let sessionId: string;
 
   if (sessionRecord) {
     activity = sessionRecord.activity;
     sessionId = sessionRecord.id;
   } else {
-    // Find the activity by access token
+    // Find the activity by access token → resolve to default session
     activity = await prisma.activity.findUnique({
       where: { accessToken: validation.data.accessToken },
+      include: { sessions: { where: { isDefault: true }, take: 1 } },
     });
+
+    if (activity) {
+      const defaultSession = activity.sessions[0];
+      if (!defaultSession) {
+        return NextResponse.json(
+          { error: "Aucune séance par défaut trouvée" },
+          { status: 500 }
+        );
+      }
+      sessionId = defaultSession.id;
+    } else {
+      sessionId = "";
+    }
   }
 
   if (!activity) {

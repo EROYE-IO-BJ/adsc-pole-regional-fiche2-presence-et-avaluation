@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileText, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
 interface Participant {
@@ -23,15 +24,34 @@ interface Participant {
   selected: boolean;
 }
 
+interface SessionData {
+  id: string;
+  title: string | null;
+  date: string | Date;
+  accessToken: string;
+  _count: { attendances: number; feedbacks: number };
+  [key: string]: any;
+}
+
 interface PdfImportDialogProps {
   activityId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  sessions?: SessionData[];
+  activityType?: string;
+  sessionId?: string;
 }
 
 type Step = "upload" | "preview" | "done";
 
-export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDialogProps) {
+export function PdfImportDialog({
+  activityId,
+  open,
+  onOpenChange,
+  sessions,
+  activityType,
+  sessionId: preSelectedSessionId,
+}: PdfImportDialogProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("upload");
@@ -42,6 +62,14 @@ export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDia
   const [result, setResult] = useState<{ created: number; duplicates: number } | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
+  const isFormation = activityType === "FORMATION";
+  const multipleSessions = sessions && sessions.length > 1;
+  const needsSessionPicker = isFormation && multipleSessions;
+
+  // Auto-select: pre-selected > single session > undefined
+  const autoSessionId = preSelectedSessionId || (sessions && sessions.length === 1 ? sessions[0].id : undefined);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | undefined>(autoSessionId);
+
   const reset = useCallback(() => {
     setStep("upload");
     setFile(null);
@@ -49,7 +77,8 @@ export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDia
     setError(null);
     setParticipants([]);
     setResult(null);
-  }, []);
+    setSelectedSessionId(preSelectedSessionId || (sessions && sessions.length === 1 ? sessions[0].id : undefined));
+  }, [preSelectedSessionId, sessions]);
 
   const handleClose = useCallback((isOpen: boolean) => {
     if (!isOpen) {
@@ -113,6 +142,12 @@ export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDia
     const selected = participants.filter((p) => p.selected);
     if (selected.length === 0) return;
 
+    // Require session selection for FORMATION with multiple sessions
+    if (needsSessionPicker && !selectedSessionId) {
+      setError("Veuillez sélectionner une séance avant d'importer");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -122,6 +157,7 @@ export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDia
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           activityId,
+          sessionId: selectedSessionId,
           participants: selected.map(({ firstName, lastName, email, phone, organization }) => ({
             firstName,
             lastName,
@@ -155,6 +191,10 @@ export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDia
 
   const selectedCount = participants.filter((p) => p.selected).length;
 
+  function sessionLabel(s: SessionData) {
+    return s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
@@ -169,6 +209,24 @@ export function PdfImportDialog({ activityId, open, onOpenChange }: PdfImportDia
         {/* UPLOAD STEP */}
         {step === "upload" && (
           <div className="space-y-4">
+            {needsSessionPicker && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Séance cible</label>
+                <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une séance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sessions!.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {sessionLabel(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
                 dragOver

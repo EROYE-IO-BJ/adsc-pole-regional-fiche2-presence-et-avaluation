@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { activityId, participants } = await request.json();
+    const { activityId, sessionId, participants } = await request.json();
 
     if (!activityId || !Array.isArray(participants) || participants.length === 0) {
       return NextResponse.json(
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     // Verify activity exists and user has access
     const activity = await prisma.activity.findUnique({
       where: { id: activityId },
+      include: { sessions: { where: { isDefault: true }, take: 1 } },
     });
 
     if (!activity) {
@@ -42,9 +43,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Resolve sessionId: use provided or fall back to default session
+    let resolvedSessionId = sessionId;
+    if (!resolvedSessionId) {
+      const defaultSession = activity.sessions[0];
+      if (!defaultSession) {
+        return NextResponse.json({ error: "Aucune séance par défaut trouvée" }, { status: 500 });
+      }
+      resolvedSessionId = defaultSession.id;
+    } else {
+      // Verify session belongs to activity
+      const session = await prisma.activitySession.findFirst({
+        where: { id: resolvedSessionId, activityId },
+      });
+      if (!session) {
+        return NextResponse.json({ error: "Séance non trouvée pour cette activité" }, { status: 400 });
+      }
+    }
+
     // Count existing before insert to calculate duplicates
     const existingCount = await prisma.attendance.count({
-      where: { activityId },
+      where: { activityId, sessionId: resolvedSessionId },
     });
 
     const data = participants.map((p: {
@@ -55,6 +74,7 @@ export async function POST(request: NextRequest) {
       organization?: string | null;
     }) => ({
       activityId,
+      sessionId: resolvedSessionId,
       firstName: p.firstName.trim(),
       lastName: p.lastName.trim(),
       email: p.email.trim().toLowerCase(),
@@ -68,7 +88,7 @@ export async function POST(request: NextRequest) {
     });
 
     const newCount = await prisma.attendance.count({
-      where: { activityId },
+      where: { activityId, sessionId: resolvedSessionId },
     });
 
     const created = newCount - existingCount;

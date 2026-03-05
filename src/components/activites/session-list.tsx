@@ -37,6 +37,10 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
   }
 
   async function handleDelete(sessionId: string) {
+    if (sessions.length <= 1) {
+      toast.error("Impossible de supprimer la dernière séance");
+      return;
+    }
     if (!confirm("Supprimer cette séance ?")) return;
 
     const res = await fetch(`/api/sessions/${sessionId}`, { method: "DELETE" });
@@ -44,7 +48,8 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       toast.success("Séance supprimée");
     } else {
-      toast.error("Erreur lors de la suppression");
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || "Erreur lors de la suppression");
     }
   }
 
@@ -144,9 +149,10 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(s.id)}
-                          title="Supprimer"
+                          title={sessions.length <= 1 ? "Impossible de supprimer la dernière séance" : "Supprimer"}
+                          disabled={sessions.length <= 1}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className={`h-4 w-4 ${sessions.length <= 1 ? "text-muted-foreground" : "text-destructive"}`} />
                         </Button>
                       </div>
                     )}

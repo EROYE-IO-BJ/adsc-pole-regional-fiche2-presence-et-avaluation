@@ -103,11 +103,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const activityDate = new Date(validation.data.date);
+
   const activity = await prisma.activity.create({
     data: {
       title: validation.data.title,
       description: validation.data.description || null,
-      date: new Date(validation.data.date),
+      date: activityDate,
       location: validation.data.location || null,
       status: validation.data.status,
       type: validation.data.type,
@@ -116,6 +118,18 @@ export async function POST(request: NextRequest) {
       programId: validation.data.programId || null,
       serviceId,
       createdById: user.id,
+      sessions: {
+        create: {
+          title: validation.data.type === "SERVICE" ? null : "Séance 1",
+          date: activityDate,
+          location: validation.data.location || null,
+          intervenantId: validation.data.intervenantId || null,
+          isDefault: true,
+        },
+      },
+    },
+    include: {
+      sessions: true,
     },
   });
 

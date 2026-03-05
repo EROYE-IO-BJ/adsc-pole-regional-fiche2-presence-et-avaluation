@@ -125,6 +125,18 @@ export async function DELETE(
     }
   }
 
+  // Block deletion of last session
+  const sessionCount = await prisma.activitySession.count({
+    where: { activityId: existing.activityId },
+  });
+
+  if (sessionCount <= 1) {
+    return NextResponse.json(
+      { error: "Impossible de supprimer la dernière séance d'une activité" },
+      { status: 400 }
+    );
+  }
+
   await prisma.activitySession.delete({ where: { id } });
 
   return NextResponse.json({ success: true });

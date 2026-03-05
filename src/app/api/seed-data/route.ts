@@ -305,7 +305,7 @@ export async function POST(request: NextRequest) {
           for (let s = 0; s < def.sessionsCount; s++) {
             const sessionDate = new Date(activityDate.getTime() + s * 7 * 86400000);
             const session = await prisma.activitySession.create({
-              data: { title: `Seance ${s + 1}`, date: sessionDate, location: def.location, intervenantId: intervenant.id, activityId: activity.id, accessToken: uid() },
+              data: { title: `Seance ${s + 1}`, date: sessionDate, location: def.location, intervenantId: intervenant.id, activityId: activity.id, accessToken: uid(), isDefault: s === 0 },
             });
             sessionRecords.push(session);
             totalSessions++;
@@ -314,8 +314,15 @@ export async function POST(request: NextRequest) {
           const numParticipants = randomInt(8, 22);
           const activityParticipants = participantPool.sort(() => Math.random() - 0.5).slice(0, numParticipants);
 
+          // Track used session+email combos to avoid unique constraint violations
+          const usedSessionEmails = new Set<string>();
+
           for (const participant of activityParticipants) {
             const session = randomChoice(sessionRecords);
+            const key = `${session.id}:${participant.email}`;
+            if (usedSessionEmails.has(key)) continue;
+            usedSessionEmails.add(key);
+
             await prisma.attendance.create({
               data: { firstName: participant.firstName, lastName: participant.lastName, email: participant.email, phone: participant.phone, organization: participant.org, activityId: activity.id, sessionId: session.id, createdAt: session.date },
             });
@@ -329,19 +336,32 @@ export async function POST(request: NextRequest) {
             }
           }
         } else {
+          // SERVICE: create a default session
+          const defaultSession = await prisma.activitySession.create({
+            data: { title: null, date: activityDate, location: def.location, intervenantId: intervenant.id, activityId: activity.id, accessToken: uid(), isDefault: true },
+          });
+          totalSessions++;
+
           const numParticipants = randomInt(5, 15);
           const activityParticipants = participantPool.sort(() => Math.random() - 0.5).slice(0, numParticipants);
 
+          // Track used session+email combos to avoid unique constraint violations
+          const usedSessionEmails = new Set<string>();
+
           for (const participant of activityParticipants) {
+            const key = `${defaultSession.id}:${participant.email}`;
+            if (usedSessionEmails.has(key)) continue;
+            usedSessionEmails.add(key);
+
             await prisma.attendance.create({
-              data: { firstName: participant.firstName, lastName: participant.lastName, email: participant.email, phone: participant.phone, organization: participant.org, activityId: activity.id, createdAt: new Date(activityDate.getTime() + randomInt(0, 24) * 3600000) },
+              data: { firstName: participant.firstName, lastName: participant.lastName, email: participant.email, phone: participant.phone, organization: participant.org, activityId: activity.id, sessionId: defaultSession.id, createdAt: new Date(activityDate.getTime() + randomInt(0, 24) * 3600000) },
             });
             totalAttendances++;
 
             if (Math.random() < 0.65) {
               const satisfaction = randomInt(2, 5);
               await prisma.feedback.create({
-                data: { feedbackType: "SERVICE", satisfactionRating: satisfaction, informationClarity: Math.random() > 0.2, improvementSuggestion: randomChoice(serviceImprovements), wouldRecommend: satisfaction >= 3, participantName: `${participant.firstName} ${participant.lastName}`, participantEmail: participant.email, activityId: activity.id, createdAt: new Date(activityDate.getTime() + randomInt(1, 72) * 3600000) },
+                data: { feedbackType: "SERVICE", satisfactionRating: satisfaction, informationClarity: Math.random() > 0.2, improvementSuggestion: randomChoice(serviceImprovements), wouldRecommend: satisfaction >= 3, participantName: `${participant.firstName} ${participant.lastName}`, participantEmail: participant.email, activityId: activity.id, sessionId: defaultSession.id, createdAt: new Date(activityDate.getTime() + randomInt(1, 72) * 3600000) },
               });
               totalFeedbacks++;
             }

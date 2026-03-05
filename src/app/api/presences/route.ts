@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   });
 
   let activity;
-  let sessionId: string | null = null;
+  let sessionId: string;
 
   if (sessionRecord) {
     activity = sessionRecord.activity;
@@ -30,7 +30,21 @@ export async function POST(request: NextRequest) {
     // Find the activity by access token
     activity = await prisma.activity.findUnique({
       where: { accessToken: validation.data.accessToken },
+      include: { sessions: { where: { isDefault: true }, take: 1 } },
     });
+
+    if (activity) {
+      const defaultSession = activity.sessions[0];
+      if (!defaultSession) {
+        return NextResponse.json(
+          { error: "Aucune séance par défaut trouvée" },
+          { status: 500 }
+        );
+      }
+      sessionId = defaultSession.id;
+    } else {
+      sessionId = "";
+    }
   }
 
   if (!activity) {
@@ -80,8 +94,8 @@ export async function POST(request: NextRequest) {
   // Check for duplicate
   const existing = await prisma.attendance.findUnique({
     where: {
-      activityId_email: {
-        activityId: activity.id,
+      sessionId_email: {
+        sessionId,
         email: validation.data.email,
       },
     },
@@ -89,7 +103,7 @@ export async function POST(request: NextRequest) {
 
   if (existing) {
     return NextResponse.json(
-      { error: "Vous êtes déjà inscrit(e) pour cette activité" },
+      { error: "Vous êtes déjà inscrit(e) pour cette séance" },
       { status: 409 }
     );
   }

@@ -19,12 +19,23 @@ export async function GET(
   const { id } = await params;
   const format = request.nextUrl.searchParams.get("format") || "csv";
   const type = request.nextUrl.searchParams.get("type") || "attendances";
+  const sessionId = request.nextUrl.searchParams.get("sessionId");
+
+  const sessionFilter = sessionId ? { sessionId } : {};
 
   const activity = await prisma.activity.findUnique({
     where: { id },
     include: {
-      attendances: { orderBy: { createdAt: "asc" } },
-      feedbacks: { orderBy: { createdAt: "asc" } },
+      attendances: {
+        where: sessionFilter,
+        orderBy: { createdAt: "asc" },
+        include: { session: { select: { title: true, date: true } } },
+      },
+      feedbacks: {
+        where: sessionFilter,
+        orderBy: { createdAt: "asc" },
+        include: { session: { select: { title: true, date: true } } },
+      },
     },
   });
 
@@ -62,6 +73,7 @@ export async function GET(
           "Satisfaction",
           "Informations claires",
           "Améliorations",
+          "Séance",
           "Date",
         ];
         const rows = activity.feedbacks.map((f) => [
@@ -70,6 +82,7 @@ export async function GET(
           f.satisfactionRating ?? "",
           f.informationClarity !== null ? (f.informationClarity ? "Oui" : "Non") : "",
           `"${(f.improvementSuggestion || "").replace(/"/g, '""')}"`,
+          f.session?.title || (f.session ? new Date(f.session.date).toLocaleDateString("fr-FR") : ""),
           new Date(f.createdAt).toLocaleDateString("fr-FR"),
         ]);
         csvContent =
@@ -86,6 +99,7 @@ export async function GET(
           "Recommande",
           "Commentaire",
           "Suggestions",
+          "Séance",
           "Date",
         ];
         const rows = activity.feedbacks.map((f) => [
@@ -97,6 +111,7 @@ export async function GET(
           f.wouldRecommend ? "Oui" : "Non",
           `"${(f.comment || "").replace(/"/g, '""')}"`,
           `"${(f.suggestions || "").replace(/"/g, '""')}"`,
+          f.session?.title || (f.session ? new Date(f.session.date).toLocaleDateString("fr-FR") : ""),
           new Date(f.createdAt).toLocaleDateString("fr-FR"),
         ]);
         csvContent =
@@ -112,6 +127,7 @@ export async function GET(
         "Email",
         "Téléphone",
         "Organisation",
+        "Séance",
         "Date",
       ];
       const rows = activity.attendances.map((a) => [
@@ -120,6 +136,7 @@ export async function GET(
         a.email,
         a.phone || "",
         a.organization || "",
+        a.session?.title || (a.session ? new Date(a.session.date).toLocaleDateString("fr-FR") : ""),
         new Date(a.createdAt).toLocaleDateString("fr-FR"),
       ]);
       csvContent =

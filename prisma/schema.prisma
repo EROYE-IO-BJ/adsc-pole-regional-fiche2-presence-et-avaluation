@@ -122,6 +122,7 @@ model ActivitySession {
   intervenantId String?
   activityId    String
   accessToken   String   @unique @default(cuid())
+  isDefault     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -140,13 +141,13 @@ model Attendance {
   organization String?
   signature    String?  @db.Text
   activityId   String
-  sessionId    String?
+  sessionId    String
   createdAt    DateTime @default(now())
 
-  activity Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  session  ActivitySession?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  activity Activity        @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  session  ActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  @@unique([activityId, email])
+  @@unique([sessionId, email])
 }
 
 model Feedback {
@@ -164,11 +165,11 @@ model Feedback {
   informationClarity    Boolean? // (SERVICE)
   improvementSuggestion String?  @db.Text // (SERVICE)
   activityId            String
-  sessionId             String?
+  sessionId             String
   createdAt             DateTime @default(now())
 
-  activity Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  session  ActivitySession?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  activity Activity        @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  session  ActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model Registration {

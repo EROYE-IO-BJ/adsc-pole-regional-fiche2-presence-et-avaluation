@@ -5,7 +5,7 @@ import { Role } from "@prisma/client";
 
 // GET /api/presences/[activityId] - List attendance for an activity
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ activityId: string }> }
 ) {
   let user;
@@ -42,9 +42,17 @@ export async function GET(
     return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
   }
 
+  const sessionId = request.nextUrl.searchParams.get("sessionId");
+
   const attendances = await prisma.attendance.findMany({
-    where: { activityId },
+    where: {
+      activityId,
+      ...(sessionId && { sessionId }),
+    },
     orderBy: { createdAt: "desc" },
+    include: {
+      session: { select: { id: true, title: true, date: true } },
+    },
   });
 
   return NextResponse.json(attendances);

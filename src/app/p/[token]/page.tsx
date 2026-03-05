@@ -48,14 +48,14 @@ export default async function PublicLandingPage({
   const isFormation = activity.type === "FORMATION";
   const isSession = !!sessionRecord;
 
-  // For FORMATION activities with sessions (not a session token), show session list
+  // For FORMATION activities with multiple sessions (not a session token), show session picker
   if (isFormation && !isSession) {
     const sessions = await prisma.activitySession.findMany({
       where: { activityId: activity.id },
       orderBy: { date: "asc" },
     });
 
-    if (sessions.length > 0) {
+    if (sessions.length > 1) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-[#14355A] to-[#7DD3D0] flex items-center justify-center p-4">
           <div className="w-full max-w-md space-y-6">

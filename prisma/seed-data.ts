@@ -494,21 +494,28 @@ async function main() {
               intervenantId: intervenant.id,
               activityId: activity.id,
               accessToken: uid(),
+              isDefault: s === 0,
             },
           });
           sessionRecords.push(session);
           totalSessions++;
         }
 
-        // ── Attendances for each session (unique per activity+email) ──
+        // ── Attendances for each session (unique per session+email) ──
         const numParticipants = randomInt(8, 22);
         const activityParticipants = participantPool
           .sort(() => Math.random() - 0.5)
           .slice(0, numParticipants);
 
+        const usedSessionEmails = new Set<string>();
+
         for (const participant of activityParticipants) {
           // Assign to a random session
           const session = randomChoice(sessionRecords);
+          const key = `${session.id}:${participant.email}`;
+          if (usedSessionEmails.has(key)) continue;
+          usedSessionEmails.add(key);
+
           await prisma.attendance.create({
             data: {
               firstName: participant.firstName,
@@ -545,13 +552,31 @@ async function main() {
           }
         }
       } else {
-        // ── SERVICE: attendances directly on activity ──
+        // ── SERVICE: create default session and attach attendances/feedbacks ──
+        const defaultSession = await prisma.activitySession.create({
+          data: {
+            title: null,
+            date: activityDate,
+            location: def.location,
+            intervenantId: intervenant.id,
+            activityId: activity.id,
+            accessToken: uid(),
+            isDefault: true,
+          },
+        });
+        totalSessions++;
+
         const numParticipants = randomInt(5, 15);
         const activityParticipants = participantPool
           .sort(() => Math.random() - 0.5)
           .slice(0, numParticipants);
 
+        const usedEmails = new Set<string>();
+
         for (const participant of activityParticipants) {
+          if (usedEmails.has(participant.email)) continue;
+          usedEmails.add(participant.email);
+
           await prisma.attendance.create({
             data: {
               firstName: participant.firstName,
@@ -560,6 +585,7 @@ async function main() {
               phone: participant.phone,
               organization: participant.org,
               activityId: activity.id,
+              sessionId: defaultSession.id,
               createdAt: new Date(activityDate.getTime() + randomInt(0, 24) * 3600000),
             },
           });
@@ -578,6 +604,7 @@ async function main() {
                 participantName: `${participant.firstName} ${participant.lastName}`,
                 participantEmail: participant.email,
                 activityId: activity.id,
+                sessionId: defaultSession.id,
                 createdAt: new Date(activityDate.getTime() + randomInt(1, 72) * 3600000),
               },
             });

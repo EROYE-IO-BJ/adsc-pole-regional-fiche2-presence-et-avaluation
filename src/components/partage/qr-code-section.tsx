@@ -5,15 +5,24 @@ import QRCode from "react-qr-code";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, QrCode, ClipboardList, MessageSquare } from "lucide-react";
+import { Copy, Check, QrCode, ClipboardList, MessageSquare, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
+
+interface SessionInfo {
+  id: string;
+  title: string | null;
+  date: string | Date;
+  accessToken: string;
+  isDefault: boolean;
+}
 
 interface QRCodeSectionProps {
   accessToken: string;
   activityTitle: string;
+  sessions?: SessionInfo[];
 }
 
-export function QRCodeSection({ accessToken, activityTitle }: QRCodeSectionProps) {
+export function QRCodeSection({ accessToken, activityTitle, sessions }: QRCodeSectionProps) {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const links = {
@@ -72,6 +81,44 @@ export function QRCodeSection({ accessToken, activityTitle }: QRCodeSectionProps
           </CardContent>
         </Card>
       </div>
+
+      {/* Per-session QR codes */}
+      {sessions && sessions.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <CalendarDays className="h-5 w-5" />
+            QR codes par séance
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {sessions.map((s) => {
+              const sessionUrl = `${baseUrl}/p/${s.accessToken}`;
+              const label = s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
+              return (
+                <Card key={s.id}>
+                  <CardHeader>
+                    <CardTitle className="text-base">{label}</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(s.date).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center gap-4">
+                    <div className="bg-white p-3 rounded-lg border">
+                      <QRCode value={sessionUrl} size={150} />
+                    </div>
+                    <CopyLink url={sessionUrl} />
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

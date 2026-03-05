@@ -12,23 +12,44 @@ export async function GET(request: NextRequest) {
   const sessionRecord = await prisma.activitySession.findUnique({
     where: { accessToken: token },
     include: {
-      activity: { select: { type: true } },
+      activity: {
+        select: {
+          type: true,
+          sessions: {
+            orderBy: { date: "asc" as const },
+            select: { id: true, title: true, date: true, accessToken: true, isDefault: true },
+          },
+        },
+      },
     },
   });
 
   if (sessionRecord) {
-    return NextResponse.json({ type: sessionRecord.activity.type });
+    return NextResponse.json({
+      type: sessionRecord.activity.type,
+      sessionId: sessionRecord.id,
+      sessions: sessionRecord.activity.sessions,
+    });
   }
 
   // Check if it's an activity token
   const activity = await prisma.activity.findUnique({
     where: { accessToken: token },
-    select: { type: true },
+    select: {
+      type: true,
+      sessions: {
+        orderBy: { date: "asc" },
+        select: { id: true, title: true, date: true, accessToken: true, isDefault: true },
+      },
+    },
   });
 
   if (!activity) {
     return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
   }
 
-  return NextResponse.json({ type: activity.type });
+  return NextResponse.json({
+    type: activity.type,
+    sessions: activity.sessions,
+  });
 }

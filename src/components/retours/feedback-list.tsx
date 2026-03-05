@@ -1,8 +1,16 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Star, ThumbsUp, CheckCircle } from "lucide-react";
+
+interface SessionInfo {
+  id: string;
+  title: string | null;
+  date: string | Date;
+}
 
 interface Feedback {
   id: string;
@@ -18,7 +26,18 @@ interface Feedback {
   satisfactionRating: number | null;
   informationClarity: boolean | null;
   improvementSuggestion: string | null;
+  sessionId: string;
+  session?: SessionInfo | null;
   createdAt: string | Date;
+}
+
+interface SessionData {
+  id: string;
+  title: string | null;
+  date: string | Date;
+  accessToken: string;
+  _count: { attendances: number; feedbacks: number };
+  [key: string]: any;
 }
 
 interface FeedbackListProps {
@@ -26,6 +45,7 @@ interface FeedbackListProps {
   stats: any;
   activityId: string;
   activityType?: string;
+  sessions?: SessionData[];
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -45,14 +65,73 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export function FeedbackList({ feedbacks, stats, activityId, activityType }: FeedbackListProps) {
+function computeStats(feedbacks: Feedback[], isService: boolean) {
+  if (feedbacks.length === 0) return null;
+
+  if (isService) {
+    const withRating = feedbacks.filter((f) => f.satisfactionRating != null);
+    const count = withRating.length;
+    if (count === 0) return null;
+    const avgSatisfaction = (
+      withRating.reduce((sum, f) => sum + (f.satisfactionRating || 0), 0) / count
+    ).toFixed(1);
+    const clarityPercent = Math.round(
+      (feedbacks.filter((f) => f.informationClarity).length / feedbacks.length) * 100
+    );
+    return { avgSatisfaction, clarityPercent };
+  }
+
+  const formationFeedbacks = feedbacks.filter(
+    (f) => f.feedbackType !== "SERVICE" && f.overallRating != null
+  );
+  if (formationFeedbacks.length === 0) return null;
+  return {
+    avgOverall: (
+      formationFeedbacks.reduce((sum, f) => sum + (f.overallRating || 0), 0) /
+      formationFeedbacks.length
+    ).toFixed(1),
+    avgContent: (
+      formationFeedbacks.reduce((sum, f) => sum + (f.contentRating || 0), 0) /
+      formationFeedbacks.length
+    ).toFixed(1),
+    avgOrganization: (
+      formationFeedbacks.reduce((sum, f) => sum + (f.organizationRating || 0), 0) /
+      formationFeedbacks.length
+    ).toFixed(1),
+    recommendPercent: Math.round(
+      (formationFeedbacks.filter((f) => f.wouldRecommend).length /
+        formationFeedbacks.length) *
+        100
+    ),
+  };
+}
+
+export function FeedbackList({ feedbacks, stats: initialStats, activityId, activityType, sessions }: FeedbackListProps) {
   const isService = activityType === "SERVICE";
+  const isFormation = activityType === "FORMATION";
+  const showSessionFilter = isFormation && sessions && sessions.length > 1;
+
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("all");
+
+  const filteredFeedbacks = useMemo(() => {
+    if (selectedSessionId === "all") return feedbacks;
+    return feedbacks.filter((f) => f.sessionId === selectedSessionId);
+  }, [feedbacks, selectedSessionId]);
+
+  // Recompute stats when filtered
+  const stats = useMemo(() => {
+    if (selectedSessionId === "all") return initialStats;
+    return computeStats(filteredFeedbacks, isService);
+  }, [selectedSessionId, filteredFeedbacks, initialStats, isService]);
 
   function handleExport() {
-    window.open(
-      `/api/activites/${activityId}/export?format=csv&type=feedbacks`,
-      "_blank"
-    );
+    const params = new URLSearchParams({ format: "csv", type: "feedbacks" });
+    if (selectedSessionId !== "all") params.set("sessionId", selectedSessionId);
+    window.open(`/api/activites/${activityId}/export?${params}`, "_blank");
+  }
+
+  function sessionLabel(s: SessionData) {
+    return s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
   }
 
   return (
@@ -127,8 +206,25 @@ export function FeedbackList({ feedbacks, stats, activityId, activityType }: Fee
       {/* Feedback Cards */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Retours des participants</CardTitle>
-          {feedbacks.length > 0 && (
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-lg">Retours des participants</CardTitle>
+            {showSessionFilter && (
+              <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                <SelectTrigger className="w-[220px] h-8 text-sm">
+                  <SelectValue placeholder="Toutes les séances" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les séances</SelectItem>
+                  {sessions.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {sessionLabel(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {filteredFeedbacks.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Exporter CSV
@@ -136,13 +232,13 @@ export function FeedbackList({ feedbacks, stats, activityId, activityType }: Fee
           )}
         </CardHeader>
         <CardContent>
-          {feedbacks.length === 0 ? (
+          {filteredFeedbacks.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-8">
               Aucun feedback reçu pour le moment.
             </p>
           ) : (
             <div className="space-y-4">
-              {feedbacks.map((feedback) => (
+              {filteredFeedbacks.map((feedback) => (
                 <div
                   key={feedback.id}
                   className="rounded-md border p-4 space-y-2"

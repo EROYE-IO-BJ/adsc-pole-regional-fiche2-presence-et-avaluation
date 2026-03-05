@@ -5,7 +5,7 @@ import { Role } from "@prisma/client";
 
 // GET /api/retours/[activityId] - List feedbacks for an activity
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ activityId: string }> }
 ) {
   let user;
@@ -41,21 +41,30 @@ export async function GET(
     return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
   }
 
+  const sessionId = request.nextUrl.searchParams.get("sessionId");
+  const feedbackWhere = {
+    activityId,
+    ...(sessionId && { sessionId }),
+  };
+
   const feedbacks = await prisma.feedback.findMany({
-    where: { activityId },
+    where: feedbackWhere,
     orderBy: { createdAt: "desc" },
+    include: {
+      session: { select: { id: true, title: true, date: true } },
+    },
   });
 
   // Calculate stats based on activity type
   if (activity.type === "SERVICE") {
     const serviceStats = await prisma.feedback.aggregate({
-      where: { activityId },
+      where: feedbackWhere,
       _avg: { satisfactionRating: true },
       _count: true,
     });
 
     const clarityCount = await prisma.feedback.count({
-      where: { activityId, informationClarity: true },
+      where: { ...feedbackWhere, informationClarity: true },
     });
 
     return NextResponse.json({
@@ -74,7 +83,7 @@ export async function GET(
 
   // FORMATION stats
   const stats = await prisma.feedback.aggregate({
-    where: { activityId },
+    where: feedbackWhere,
     _avg: {
       overallRating: true,
       contentRating: true,
@@ -84,7 +93,7 @@ export async function GET(
   });
 
   const recommendCount = await prisma.feedback.count({
-    where: { activityId, wouldRecommend: true },
+    where: { ...feedbackWhere, wouldRecommend: true },
   });
 
   return NextResponse.json({

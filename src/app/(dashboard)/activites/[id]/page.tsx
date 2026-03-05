@@ -43,8 +43,14 @@ export default async function ActivityDetailPage({
   const activity = await prisma.activity.findFirst({
     where,
     include: {
-      attendances: { orderBy: { createdAt: "desc" } },
-      feedbacks: { orderBy: { createdAt: "desc" } },
+      attendances: {
+        orderBy: { createdAt: "desc" },
+        include: { session: { select: { id: true, title: true, date: true } } },
+      },
+      feedbacks: {
+        orderBy: { createdAt: "desc" },
+        include: { session: { select: { id: true, title: true, date: true } } },
+      },
       sessions: {
         orderBy: { date: "asc" },
         include: {
@@ -271,6 +277,8 @@ export default async function ActivityDetailPage({
             attendances={activity.attendances}
             activityId={activity.id}
             canImport={canEdit}
+            sessions={activity.sessions}
+            activityType={activity.type}
           />
         </TabsContent>
 
@@ -280,6 +288,7 @@ export default async function ActivityDetailPage({
             stats={feedbackStats}
             activityId={activity.id}
             activityType={activity.type}
+            sessions={activity.sessions}
           />
         </TabsContent>
 

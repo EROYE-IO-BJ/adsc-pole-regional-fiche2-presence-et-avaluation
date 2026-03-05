@@ -30,7 +30,17 @@ export default async function SharePage({
 
   const activity = await prisma.activity.findFirst({
     where,
-    select: { id: true, title: true, accessToken: true, date: true },
+    select: {
+      id: true,
+      title: true,
+      accessToken: true,
+      date: true,
+      type: true,
+      sessions: {
+        orderBy: { date: "asc" },
+        select: { id: true, title: true, date: true, accessToken: true, isDefault: true },
+      },
+    },
   });
 
   if (!activity) {
@@ -51,7 +61,11 @@ export default async function SharePage({
         </div>
       </div>
 
-      <QRCodeSection accessToken={activity.accessToken} activityTitle={activity.title} />
+      <QRCodeSection
+        accessToken={activity.accessToken}
+        activityTitle={activity.title}
+        sessions={activity.type === "FORMATION" && activity.sessions.length > 1 ? activity.sessions : undefined}
+      />
     </div>
   );
 }

@@ -60,6 +60,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Activité non trouvée" }, { status: 404 });
   }
 
+  if (activity.type === "SERVICE") {
+    return NextResponse.json(
+      { error: "Les activités SERVICE ne supportent pas plusieurs séances" },
+      { status: 400 }
+    );
+  }
+
   if (user.role === Role.RESPONSABLE_SERVICE) {
     const hasAccess = await userCanAccessService(user.id, activity.serviceId);
     if (!hasAccess) {

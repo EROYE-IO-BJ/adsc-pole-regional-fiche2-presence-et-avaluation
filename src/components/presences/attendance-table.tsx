@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Upload } from "lucide-react";
 import { PdfImportDialog } from "@/components/import/pdf-import-dialog";
+
+interface SessionInfo {
+  id: string;
+  title: string | null;
+  date: string | Date;
+}
 
 interface Attendance {
   id: string;
@@ -14,29 +21,71 @@ interface Attendance {
   phone: string | null;
   organization: string | null;
   signature: string | null;
+  sessionId: string;
+  session?: SessionInfo | null;
   createdAt: string | Date;
+}
+
+interface SessionData {
+  id: string;
+  title: string | null;
+  date: string | Date;
+  accessToken: string;
+  _count: { attendances: number; feedbacks: number };
+  [key: string]: any;
 }
 
 interface AttendanceTableProps {
   attendances: Attendance[];
   activityId: string;
   canImport?: boolean;
+  sessions?: SessionData[];
+  activityType?: string;
 }
 
-export function AttendanceTable({ attendances, activityId, canImport }: AttendanceTableProps) {
+export function AttendanceTable({ attendances, activityId, canImport, sessions, activityType }: AttendanceTableProps) {
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("all");
+
+  const isFormation = activityType === "FORMATION";
+  const showSessionFilter = isFormation && sessions && sessions.length > 1;
+
+  const filteredAttendances = useMemo(() => {
+    if (selectedSessionId === "all") return attendances;
+    return attendances.filter((a) => a.sessionId === selectedSessionId);
+  }, [attendances, selectedSessionId]);
 
   function handleExport() {
-    window.open(
-      `/api/activites/${activityId}/export?format=csv&type=attendances`,
-      "_blank"
-    );
+    const params = new URLSearchParams({ format: "csv", type: "attendances" });
+    if (selectedSessionId !== "all") params.set("sessionId", selectedSessionId);
+    window.open(`/api/activites/${activityId}/export?${params}`, "_blank");
+  }
+
+  function sessionLabel(s: SessionData) {
+    return s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Liste de présence</CardTitle>
+        <div className="flex items-center gap-3">
+          <CardTitle className="text-lg">Liste de présence</CardTitle>
+          {showSessionFilter && (
+            <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+              <SelectTrigger className="w-[220px] h-8 text-sm">
+                <SelectValue placeholder="Toutes les séances" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les séances</SelectItem>
+                {sessions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {sessionLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         <div className="flex gap-2">
           {canImport && (
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
@@ -44,7 +93,7 @@ export function AttendanceTable({ attendances, activityId, canImport }: Attendan
               Importer PDF
             </Button>
           )}
-          {attendances.length > 0 && (
+          {filteredAttendances.length > 0 && (
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Exporter CSV
@@ -53,7 +102,7 @@ export function AttendanceTable({ attendances, activityId, canImport }: Attendan
         </div>
       </CardHeader>
       <CardContent>
-        {attendances.length === 0 ? (
+        {filteredAttendances.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-8">
             Aucune présence enregistrée pour le moment.
           </p>
@@ -73,11 +122,16 @@ export function AttendanceTable({ attendances, activityId, canImport }: Attendan
                   <th className="pb-3 font-medium text-muted-foreground hidden md:table-cell">
                     Signature
                   </th>
+                  {showSessionFilter && selectedSessionId === "all" && (
+                    <th className="pb-3 font-medium text-muted-foreground hidden lg:table-cell">
+                      Séance
+                    </th>
+                  )}
                   <th className="pb-3 font-medium text-muted-foreground">Date</th>
                 </tr>
               </thead>
               <tbody>
-                {attendances.map((attendance) => (
+                {filteredAttendances.map((attendance) => (
                   <tr key={attendance.id} className="border-b last:border-0">
                     <td className="py-3">
                       {attendance.firstName} {attendance.lastName}
@@ -100,6 +154,14 @@ export function AttendanceTable({ attendances, activityId, canImport }: Attendan
                         "-"
                       )}
                     </td>
+                    {showSessionFilter && selectedSessionId === "all" && (
+                      <td className="py-3 hidden lg:table-cell text-muted-foreground text-xs">
+                        {attendance.session?.title ||
+                          (attendance.session
+                            ? new Date(attendance.session.date).toLocaleDateString("fr-FR")
+                            : "-")}
+                      </td>
+                    )}
                     <td className="py-3">
                       {new Date(attendance.createdAt).toLocaleDateString("fr-FR")}
                     </td>
@@ -115,6 +177,9 @@ export function AttendanceTable({ attendances, activityId, canImport }: Attendan
           activityId={activityId}
           open={importOpen}
           onOpenChange={setImportOpen}
+          sessions={sessions}
+          activityType={activityType}
+          sessionId={selectedSessionId !== "all" ? selectedSessionId : undefined}
         />
       )}
     </Card>
