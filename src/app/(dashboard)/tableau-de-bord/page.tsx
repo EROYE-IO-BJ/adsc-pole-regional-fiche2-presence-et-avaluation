@@ -2,10 +2,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserServiceIds } from "@/lib/authorization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Users, MessageSquare, TrendingUp } from "lucide-react";
+import { CalendarDays, Users, MessageSquare, TrendingUp, BarChart3, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { DashboardCharts } from "@/components/dashboard/charts";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { Role } from "@prisma/client";
 
 export default async function DashboardPage() {
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   }
   // ADMIN: no filter (sees all)
 
-  const [activitiesCount, attendancesCount, feedbacksCount, recentActivities] =
+  const [activitiesCount, attendancesCount, feedbacksCount, recentActivities, recommendCount] =
     await Promise.all([
       prisma.activity.count({ where: activityWhere }),
       prisma.attendance.count({
@@ -40,12 +40,23 @@ export default async function DashboardPage() {
           _count: { select: { attendances: true, feedbacks: true } },
         },
       }),
+      prisma.feedback.count({
+        where: { activity: activityWhere, wouldRecommend: true },
+      }),
     ]);
 
   const avgRating = await prisma.feedback.aggregate({
     where: { activity: activityWhere },
     _avg: { overallRating: true },
   });
+
+  const feedbackRate = attendancesCount > 0
+    ? Math.round((feedbacksCount / attendancesCount) * 100)
+    : 0;
+
+  const recommendationRate = feedbacksCount > 0
+    ? Math.round((recommendCount / feedbacksCount) * 100)
+    : 0;
 
   const stats = [
     {
@@ -78,6 +89,20 @@ export default async function DashboardPage() {
       color: "text-[#D4A017]",
       bg: "bg-[#D4A017]/10",
     },
+    {
+      title: "Taux de feedback",
+      value: feedbackRate + "%",
+      icon: BarChart3,
+      color: "text-[#10b981]",
+      bg: "bg-[#10b981]/10",
+    },
+    {
+      title: "Recommandation",
+      value: recommendationRate + "%",
+      icon: ThumbsUp,
+      color: "text-[#8b5cf6]",
+      bg: "bg-[#8b5cf6]/10",
+    },
   ];
 
   return (
@@ -97,7 +122,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
