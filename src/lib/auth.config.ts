@@ -29,6 +29,7 @@ export const authConfig: NextAuthConfig = {
         pathname === "/api/presences" ||
         pathname === "/api/retours" ||
         pathname === "/api/seed" ||
+        pathname === "/api/seed-data" ||
         pathname === "/api/activites/by-token"
       ) {
         return true;
