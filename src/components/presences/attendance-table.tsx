@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Upload } from "lucide-react";
+import { PdfImportDialog } from "@/components/import/pdf-import-dialog";
 
 interface Attendance {
   id: string;
@@ -18,9 +20,12 @@ interface Attendance {
 interface AttendanceTableProps {
   attendances: Attendance[];
   activityId: string;
+  canImport?: boolean;
 }
 
-export function AttendanceTable({ attendances, activityId }: AttendanceTableProps) {
+export function AttendanceTable({ attendances, activityId, canImport }: AttendanceTableProps) {
+  const [importOpen, setImportOpen] = useState(false);
+
   function handleExport() {
     window.open(
       `/api/activites/${activityId}/export?format=csv&type=attendances`,
@@ -32,12 +37,20 @@ export function AttendanceTable({ attendances, activityId }: AttendanceTableProp
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Liste de présence</CardTitle>
-        {attendances.length > 0 && (
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Exporter CSV
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {canImport && (
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Importer PDF
+            </Button>
+          )}
+          {attendances.length > 0 && (
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Exporter CSV
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {attendances.length === 0 ? (
@@ -97,6 +110,13 @@ export function AttendanceTable({ attendances, activityId }: AttendanceTableProp
           </div>
         )}
       </CardContent>
+      {canImport && (
+        <PdfImportDialog
+          activityId={activityId}
+          open={importOpen}
+          onOpenChange={setImportOpen}
+        />
+      )}
     </Card>
   );
 }

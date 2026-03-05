@@ -270,6 +270,7 @@ export default async function ActivityDetailPage({
           <AttendanceTable
             attendances={activity.attendances}
             activityId={activity.id}
+            canImport={canEdit}
           />
         </TabsContent>
 
