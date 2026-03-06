@@ -72,6 +72,27 @@ export function TypeDistributionChart({ data }: Props) {
             </Pie>
             <Tooltip />
             <Legend />
+            {/* Total au centre du donut */}
+            <text
+              x="50%"
+              y="47%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-foreground"
+              style={{ fontSize: "24px", fontWeight: "bold" }}
+            >
+              {total}
+            </text>
+            <text
+              x="50%"
+              y="57%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-muted-foreground"
+              style={{ fontSize: "12px" }}
+            >
+              activités
+            </text>
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

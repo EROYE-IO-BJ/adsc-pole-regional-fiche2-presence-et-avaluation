@@ -22,7 +22,7 @@ export function ServiceActivityChart({ data }: Props) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Activité par service</CardTitle>
+          <CardTitle className="text-lg">Présences et feedbacks par service</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm text-center py-8">
@@ -36,7 +36,7 @@ export function ServiceActivityChart({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Activité par service</CardTitle>
+        <CardTitle className="text-lg">Présences et feedbacks par service</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={Math.max(250, data.length * 50)}>

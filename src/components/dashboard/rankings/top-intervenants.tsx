@@ -39,13 +39,13 @@ export function TopIntervenants({ data }: Props) {
         <CardTitle className="text-lg">Top 5 Intervenants</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {data.map((intervenant, index) => (
+        {[...data].reverse().map((intervenant, index) => (
           <div
             key={intervenant.id}
             className="flex items-center gap-3 rounded-md border p-3"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#8b5cf6]/10 text-sm font-bold text-[#8b5cf6]">
-              {index + 1}
+              {data.length - index}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{intervenant.name}</p>
