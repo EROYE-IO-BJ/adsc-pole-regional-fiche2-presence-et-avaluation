@@ -38,7 +38,7 @@ test.describe("Authentication", () => {
 
   test("unauthenticated access to dashboard should redirect to connexion", async ({ page }) => {
     await page.goto("/tableau-de-bord");
-    await page.waitForURL("**/connexion", { timeout: 10000 });
+    await page.waitForURL(/\/connexion/, { timeout: 10000 });
     expect(page.url()).toContain("/connexion");
   });
 });

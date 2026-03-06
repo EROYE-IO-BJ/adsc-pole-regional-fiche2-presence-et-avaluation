@@ -9,7 +9,8 @@ export default async function globalSetup() {
 
   // Seed test data via the API or directly
   const { PrismaClient } = await import("@prisma/client");
-  const bcrypt = await import("bcryptjs");
+  const bcryptModule = await import("bcryptjs");
+  const bcrypt = bcryptModule.default || bcryptModule;
   const prisma = new PrismaClient();
 
   try {
