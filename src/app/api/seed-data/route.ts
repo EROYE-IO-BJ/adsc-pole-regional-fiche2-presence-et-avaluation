@@ -78,7 +78,6 @@ const formationComments = [
   "Le rythme etait un peu rapide pour moi.",
   "Tres satisfait de cette experience.",
   "Les cas pratiques etaient tres pertinents.",
-  "Bonne formation mais la salle etait un peu petite.",
   "Merci pour cette formation de qualite.",
   "Le niveau etait adapte a mes attentes.",
   "J'ai pu appliquer directement ce que j'ai appris.",
@@ -108,424 +107,316 @@ const serviceImprovements = [
   "Excellent service, rien a ameliorer.",
   "Serait bien d'avoir un numero de suivi de dossier.",
   "Le temps d'attente etait un peu long.",
-  "Prevoir un guide ecrit des etapes a suivre.",
   "Service rapide et efficace.",
   null,null,null,
 ];
 
-// ═══ Locations ════════════════════════════════════════════════════════
+// ═══ Service definitions ═════════════════════════════════════════════
 
-const LOCATIONS: Record<string, string[]> = {
+type SvcKey =
+  | "programmes-formation"
+  | "programmes-incubation"
+  | "makerspace-scop"
+  | "valorisation-innovation"
+  | "ima-lingua"
+  | "career-center"
+  | "recrutement-mobilite";
+
+const serviceDefs: { key: SvcKey; name: string; slug: string; description: string }[] = [
+  { key: "programmes-formation", name: "Service des Programmes de Formation", slug: "programmes-formation", description: "Service de formation et de renforcement des competences" },
+  { key: "programmes-incubation", name: "Service des Programmes d'Incubation", slug: "programmes-incubation", description: "Service d'incubation et d'accompagnement des projets creatifs" },
+  { key: "makerspace-scop", name: "Makerspace - Seme City Open Park (SCOP)", slug: "makerspace-scop", description: "Tiers-lieu dedie a la fabrication numerique et au prototypage" },
+  { key: "valorisation-innovation", name: "Service de Valorisation de l'Innovation", slug: "valorisation-innovation", description: "Service de recherche, experimentation et valorisation de l'innovation" },
+  { key: "ima-lingua", name: "IMA Lingua", slug: "ima-lingua", description: "Centre de langues de Seme City" },
+  { key: "career-center", name: "Career Center", slug: "career-center", description: "Centre de carriere et d'orientation professionnelle" },
+  { key: "recrutement-mobilite", name: "Service Recrutement, Accueil et Mobilite", slug: "recrutement-mobilite", description: "Service de recrutement, accueil et mobilite internationale" },
+];
+
+// ═══ Locations ═══════════════════════════════════════════════════════
+
+const LOCATIONS: Record<SvcKey, string[]> = {
+  "programmes-formation": [
+    "Salle de Formation A - Seme City","Salle de Formation B - Seme City","Salle de Formation C - Seme City",
+    "Amphitheatre Seme City","Lab Informatique - Seme City","Salle de classe D - Seme City",
+    "Salle Sante - Seme City","Salle Archi - Seme City","Laboratoire Sciences - Seme City",
+  ],
+  "programmes-incubation": [
+    "Studio Film - Seme City","Atelier Couture - Seme City","Studio Animation - Seme City",
+    "Salle de Projection - Seme City","Studio Narration - Seme City","Lab Jeux Video - Seme City",
+    "Espace Incubation - Seme City","Salle Creative - Seme City",
+  ],
+  "makerspace-scop": [
+    "Fab Lab - Seme City","Atelier Bois - Seme City","Atelier Textile - Seme City",
+    "Lab Electronique - Seme City","Atelier Ceramique - Seme City","Espace Prototypage - Seme City",
+    "Atelier Metal - Seme City","Salle CNC - Seme City",
+  ],
+  "valorisation-innovation": [
+    "Lab Innovation - Seme City","Salle de Conference - Seme City","Hub Data - Seme City",
+    "Espace Co-creation - Seme City","Salle de Recherche - Seme City","Bureau Innovation - Seme City",
+  ],
   "ima-lingua": [
     "Salle Lingua A - Seme City","Salle Lingua B - Seme City","Salle Lingua C - Seme City",
-    "Bibliotheque Seme City","Lab Digital - Seme City","Auditorium Seme City",
-    "Salle Informatique A - Seme City","Salle Archi - Seme City","Laboratoire Seme City",
+    "Bibliotheque Seme City","Lab Digital Lingua - Seme City","Auditorium Seme City",
   ],
   "career-center": [
     "Salle Career A - Seme City","Salle Career B - Seme City","Salle Career C - Seme City",
     "Amphitheatre Seme City","Espace Coworking - Seme City","Hub Innovation - Seme City",
-    "Salle Conference - Seme City","Incubateur Seme City",
   ],
   "recrutement-mobilite": [
     "Salle Accueil - Seme City","Bureau Recrutement - Seme City","Bureau Mobilite - Seme City",
-    "Studio Arts - Seme City","Studio Film - Seme City","Fab Lab - Seme City",
-    "Atelier Couture - Seme City","Studio Animation - Seme City","Salle Projection - Seme City",
+    "Salle de reunion - Seme City","Guichet Unique - Seme City",
   ],
 };
 
-// ═══ Program & Activity definitions ══════════════════════════════════
+// ═══ Program + Activity definitions ═════════════════════════════════
 
-type SvcKey = "ima-lingua" | "career-center" | "recrutement-mobilite";
-// [title, "F"=FORMATION | "S"=SERVICE]
 type ActDef = [string, "F" | "S"];
-
-interface ProgramDef {
-  name: string;
-  desc: string;
-  svc: SvcKey;
-  acts: ActDef[];
-}
+interface ProgramDef { name: string; desc: string; svc: SvcKey; acts: ActDef[]; }
 
 const programDefs: ProgramDef[] = [
-  // ── IMA Lingua (education, languages, academic, tech) ─────────
-  {
-    name: "Le centre de langues, IMA Lingua",
-    desc: "Centre de langues proposant des formations et services linguistiques pour la communaute de Seme City",
-    svc: "ima-lingua",
-    acts: [
-      ["Formation Anglais professionnel - Niveau B2", "F"],
-      ["Cours de Francais Langue Etrangere - Niveau A2", "F"],
-      ["Atelier de conversation en mandarin", "F"],
-      ["Preparation au DELF B1", "F"],
-      ["Formation d'espagnol professionnel", "F"],
-      ["Cours intensif de portugais", "F"],
-      ["Atelier d'ecriture academique en anglais", "F"],
-      ["Evaluation de niveau linguistique", "S"],
-      ["Traduction certifiee de documents officiels", "S"],
-      ["Interpretariat pour conferences", "S"],
-    ],
-  },
-  {
-    name: "Le service de bibliotheque",
-    desc: "Bibliotheque et centre de ressources documentaires de Seme City",
-    svc: "ima-lingua",
-    acts: [
-      ["Atelier de recherche documentaire", "F"],
-      ["Formation aux bases de donnees academiques", "F"],
-      ["Initiation a la veille informationnelle", "F"],
-      ["Club de lecture scientifique", "F"],
-      ["Formation en gestion bibliographique (Zotero)", "F"],
-      ["Consultation bibliographique personnalisee", "S"],
-      ["Pret inter-bibliotheques", "S"],
-    ],
-  },
-  {
-    name: "Le service de propedeutique",
-    desc: "Programme preparatoire pour renforcer les bases academiques des apprenants",
-    svc: "ima-lingua",
-    acts: [
-      ["Mise a niveau en mathematiques", "F"],
-      ["Mise a niveau en physique-chimie", "F"],
-      ["Renforcement en methodologie universitaire", "F"],
-      ["Atelier de redaction scientifique", "F"],
-      ["Cours preparatoire en biologie", "F"],
-      ["Orientation academique personnalisee", "S"],
-    ],
-  },
-  {
-    name: "Les campus connectes",
-    desc: "Programme de formation a distance via les campus connectes de Seme City",
-    svc: "ima-lingua",
-    acts: [
-      ["Formation aux outils de collaboration en ligne", "F"],
-      ["Atelier de creation de contenus numeriques", "F"],
-      ["Initiation a la programmation web", "F"],
-      ["Formation cybersecurite pour etudiants", "F"],
-      ["Accompagnement technique etudiant", "S"],
-    ],
-  },
-  {
-    name: "Le service du Digital Learning Lab",
-    desc: "Laboratoire d'innovation pedagogique numerique de Seme City",
-    svc: "ima-lingua",
-    acts: [
-      ["Formation en conception pedagogique numerique", "F"],
-      ["Atelier de creation de cours en ligne (MOOC)", "F"],
-      ["Formation en realite virtuelle appliquee a l'education", "F"],
-      ["Initiation au design UX/UI", "F"],
-      ["Production de contenus e-learning", "S"],
-      ["Support technique plateforme d'apprentissage", "S"],
-    ],
-  },
-  {
-    name: "Les formations en IA/informatique type Ecole 42 / Zone 01",
-    desc: "Formations intensives en informatique et intelligence artificielle basees sur la pedagogie par projets",
-    svc: "ima-lingua",
-    acts: [
-      ["Piscine C - Initiation a la programmation", "F"],
-      ["Formation developpement web full-stack", "F"],
-      ["Bootcamp Intelligence Artificielle", "F"],
-      ["Formation en cybersecurite avancee", "F"],
-      ["Atelier DevOps et Cloud Computing", "F"],
-      ["Hackathon IA pour le developpement", "F"],
-      ["Formation Python et Data Science", "F"],
-      ["Mentorat technique individuel", "S"],
-    ],
-  },
-  {
-    name: "Le Master en architecture",
-    desc: "Programme de Master en architecture et urbanisme durable pour l'Afrique",
-    svc: "ima-lingua",
-    acts: [
-      ["Atelier de conception architecturale", "F"],
-      ["Formation en design durable et bioclimatique", "F"],
-      ["Cours de modelisation 3D (BIM)", "F"],
-      ["Seminaire d'urbanisme africain contemporain", "F"],
-      ["Atelier de maquettage et prototypage", "F"],
-      ["Revue de projets architecturaux", "S"],
-    ],
-  },
-  {
-    name: "Les programmes de formation en health-tech",
-    desc: "Formations en technologies de la sante et innovation medicale",
-    svc: "ima-lingua",
-    acts: [
-      ["Formation en telemedecine et e-sante", "F"],
-      ["Bootcamp developpement d'applications sante", "F"],
-      ["Formation gestion de donnees medicales", "F"],
-      ["Atelier IoT pour la sante", "F"],
-      ["Seminaire innovation sante en Afrique", "F"],
-      ["Consultation healthtech startup", "S"],
-    ],
-  },
-  {
-    name: "Les formations de techniciens de laboratoire",
-    desc: "Formations techniques pour les futurs techniciens de laboratoire",
-    svc: "ima-lingua",
-    acts: [
-      ["Formation techniques d'analyse biochimique", "F"],
-      ["Formation en microbiologie appliquee", "F"],
-      ["Cours de securite en laboratoire", "F"],
-      ["Formation en instrumentation analytique", "F"],
-      ["Atelier de controle qualite", "F"],
-      ["Calibration et maintenance d'equipements", "S"],
-    ],
-  },
+  // ── Training Programs Service (13 programs) ────────────────────────
+  { name: "Le programme IMA leadership", desc: "Programme de developpement du leadership et des competences transversales", svc: "programmes-formation", acts: [
+    ["Formation Leadership transformationnel","F"],["Atelier Prise de parole en public","F"],
+    ["Formation Gestion de conflits et mediation","F"],["Seminaire Intelligence emotionnelle","F"],
+    ["Coaching en leadership de projet","F"],["Masterclass Leadership feminin","F"],
+    ["Formation Management interculturel","F"],["Atelier Negociation et influence","F"],
+  ]},
+  { name: "Les campus connectes", desc: "Programme de formation a distance via les campus connectes de Seme City", svc: "programmes-formation", acts: [
+    ["Formation Outils de collaboration en ligne","F"],["Atelier Creation de contenus numeriques","F"],
+    ["Initiation a la programmation web","F"],["Formation Cybersecurite pour etudiants","F"],
+    ["Cours Introduction au Cloud Computing","F"],["Atelier Methodologie d'apprentissage en ligne","F"],
+    ["Accompagnement technique etudiant","S"],
+  ]},
+  { name: "Les programmes de formation en health-tech", desc: "Formations en technologies de la sante et innovation medicale", svc: "programmes-formation", acts: [
+    ["Formation Telemedecine et e-sante","F"],["Bootcamp Developpement d'applications sante","F"],
+    ["Formation Gestion de donnees medicales","F"],["Atelier IoT pour la sante","F"],
+    ["Seminaire Innovation sante en Afrique","F"],["Formation IA appliquee a la sante","F"],
+    ["Atelier Regulation et ethique en health-tech","F"],["Consultation healthtech startup","S"],
+  ]},
+  { name: "Le Master en architecture", desc: "Programme de Master en architecture et urbanisme durable pour l'Afrique", svc: "programmes-formation", acts: [
+    ["Atelier Conception architecturale durable","F"],["Formation Design bioclimatique et ecoconstruction","F"],
+    ["Cours Modelisation 3D et BIM","F"],["Seminaire Urbanisme africain contemporain","F"],
+    ["Atelier Maquettage et prototypage architectural","F"],["Formation Materiaux locaux et construction","F"],
+    ["Revue de projets architecturaux","S"],
+  ]},
+  { name: "Le service du Digital Learning Lab", desc: "Laboratoire d'innovation pedagogique numerique de Seme City", svc: "programmes-formation", acts: [
+    ["Formation Conception pedagogique numerique","F"],["Atelier Creation de cours en ligne (MOOC)","F"],
+    ["Formation Realite virtuelle appliquee a l'education","F"],["Initiation au design UX/UI pedagogique","F"],
+    ["Formation Gamification de l'apprentissage","F"],["Atelier Evaluation et analytics educatifs","F"],
+    ["Production de contenus e-learning","S"],["Support technique plateforme d'apprentissage","S"],
+  ]},
+  { name: "Le service de bibliotheque", desc: "Bibliotheque et centre de ressources documentaires de Seme City", svc: "programmes-formation", acts: [
+    ["Atelier Recherche documentaire avancee","F"],["Formation Bases de donnees academiques","F"],
+    ["Initiation a la veille informationnelle","F"],["Club de lecture scientifique","F"],
+    ["Formation Gestion bibliographique (Zotero)","F"],["Atelier Redaction d'articles scientifiques","F"],
+    ["Consultation bibliographique personnalisee","S"],["Pret inter-bibliotheques","S"],
+  ]},
+  { name: "Le service de propedeutique", desc: "Programme preparatoire pour renforcer les bases academiques des apprenants", svc: "programmes-formation", acts: [
+    ["Mise a niveau en mathematiques","F"],["Mise a niveau en physique-chimie","F"],
+    ["Renforcement en methodologie universitaire","F"],["Atelier Redaction scientifique","F"],
+    ["Cours preparatoire en biologie","F"],["Formation Techniques d'apprentissage et gestion du temps","F"],
+    ["Orientation academique personnalisee","S"],
+  ]},
+  { name: "Les formations en IA/informatique de type Ecole 42 / Zone 01", desc: "Formations intensives en informatique et IA basees sur la pedagogie par projets", svc: "programmes-formation", acts: [
+    ["Piscine C - Initiation a la programmation","F"],["Formation Developpement web full-stack","F"],
+    ["Bootcamp Intelligence Artificielle","F"],["Formation Cybersecurite avancee","F"],
+    ["Atelier DevOps et Cloud Computing","F"],["Hackathon IA pour le developpement","F"],
+    ["Formation Python et Data Science","F"],["Cours Algorithmique et structures de donnees","F"],
+    ["Formation Developpement mobile (Flutter/React Native)","F"],["Mentorat technique individuel","S"],
+  ]},
+  { name: "Les formations de techniciens de laboratoire", desc: "Formations techniques pour les futurs techniciens de laboratoire et la biofabrication", svc: "programmes-formation", acts: [
+    ["Formation Techniques d'analyse biochimique","F"],["Formation Microbiologie appliquee","F"],
+    ["Cours Securite en laboratoire","F"],["Formation Instrumentation analytique","F"],
+    ["Atelier Controle qualite et BPF","F"],["Formation Biofabrication et production pharmaceutique","F"],
+    ["Calibration et maintenance d'equipements","S"],
+  ]},
+  { name: "La formation en IA des eleves et enseignements des colleges et lycees", desc: "Programme d'introduction de l'IA dans le systeme educatif beninois", svc: "programmes-formation", acts: [
+    ["Formation Initiation a la programmation pour collegiens","F"],["Atelier IA pour lyceens - Niveau debutant","F"],
+    ["Formation Fondamentaux du Machine Learning pour enseignants","F"],["Atelier Robotique educative et IA","F"],
+    ["Cours NLP et traitement du langage pour enseignants","F"],["Formation Certification enseignants en IA","F"],
+    ["Atelier Creation de ressources pedagogiques IA","F"],["Accompagnement clubs IA dans les etablissements","S"],
+  ]},
+  { name: "Les Olympiades de l'Intelligence Artificielle (IA)", desc: "Preparation des lyceens beninois aux Olympiades internationales de l'IA", svc: "programmes-formation", acts: [
+    ["Formation Fondamentaux de l'IA pour lyceens","F"],["Atelier Programmation Python pour l'IA","F"],
+    ["Bootcamp Preparation aux Olympiades internationales","F"],["Formation Machine Learning et Deep Learning","F"],
+    ["Atelier NLP et traitement du langage","F"],["Olympiades nationales d'IA - Selection","F"],
+    ["Evaluation et suivi des candidats","S"],
+  ]},
+  { name: "L'Ecole des Arts du Benin", desc: "Ecole de formation aux arts visuels, decoratifs et vivants", svc: "programmes-formation", acts: [
+    ["Formation Arts plastiques contemporains","F"],["Atelier Sculpture et modelage","F"],
+    ["Cours Peinture techniques mixtes","F"],["Formation Art numerique et creation digitale","F"],
+    ["Masterclass Performance artistique","F"],["Atelier Photographie artistique","F"],
+    ["Formation Design textile et mode","F"],["Atelier Serigraphie et gravure","F"],
+    ["Exposition et critique d'oeuvres","S"],
+  ]},
+  { name: "L'African Screen Institute", desc: "Institut de formation aux metiers des industries de l'ecran", svc: "programmes-formation", acts: [
+    ["Formation Realisation cinematographique","F"],["Atelier Ecriture de scenario","F"],
+    ["Formation Production audiovisuelle","F"],["Cours Montage et post-production","F"],
+    ["Masterclass Direction d'acteurs","F"],["Formation Animation et VFX","F"],
+    ["Atelier Narration et XR","F"],["Projection et analyse de films africains","S"],
+  ]},
 
-  // ── Career Center (career, entrepreneurship, business) ────────
-  {
-    name: "Le Skill-Matcher",
-    desc: "Plateforme de matching entre competences et opportunites professionnelles",
-    svc: "career-center",
-    acts: [
-      ["Atelier d'identification des competences transferables", "F"],
-      ["Formation en cartographie des competences", "F"],
-      ["Workshop de matching competences-emplois", "F"],
-      ["Bilan de competences individuel", "S"],
-      ["Test de personnalite et orientation", "S"],
-      ["Accompagnement reconversion professionnelle", "S"],
-    ],
-  },
-  {
-    name: "Le programme IMA leadership",
-    desc: "Programme de developpement du leadership pour les jeunes professionnels africains",
-    svc: "career-center",
-    acts: [
-      ["Formation Leadership transformationnel", "F"],
-      ["Atelier de prise de parole en public", "F"],
-      ["Formation en gestion de conflits", "F"],
-      ["Seminaire d'intelligence emotionnelle", "F"],
-      ["Coaching en leadership de projet", "F"],
-      ["Masterclass leadership feminin", "F"],
-    ],
-  },
-  {
-    name: "Le Career Center (service placement)",
-    desc: "Centre de carriere pour l'accompagnement a l'insertion professionnelle",
-    svc: "career-center",
-    acts: [
-      ["Atelier CV et lettre de motivation", "F"],
-      ["Simulation d'entretien d'embauche", "F"],
-      ["Formation Personal Branding et LinkedIn", "F"],
-      ["Forum entreprises et recrutement", "F"],
-      ["Coaching carriere individuel", "S"],
-      ["Conseil en strategie de recherche d'emploi", "S"],
-      ["Mise en relation entreprises-candidats", "S"],
-    ],
-  },
-  {
-    name: "RISE",
-    desc: "Programme d'entrepreneuriat social et a impact pour les jeunes innovateurs",
-    svc: "career-center",
-    acts: [
-      ["Bootcamp entrepreneuriat social", "F"],
-      ["Formation en modele economique a impact", "F"],
-      ["Atelier de design thinking social", "F"],
-      ["Seminaire de mesure d'impact", "F"],
-      ["Pitch competition RISE", "F"],
-      ["Mentorat entrepreneur social", "S"],
-    ],
-  },
-  {
-    name: "Next Impact",
-    desc: "Programme d'acceleration pour les startups a fort potentiel de croissance",
-    svc: "career-center",
-    acts: [
-      ["Programme d'acceleration startup Next Impact", "F"],
-      ["Formation en levee de fonds", "F"],
-      ["Atelier de prototypage rapide", "F"],
-      ["Masterclass strategie de croissance", "F"],
-      ["Workshop go-to-market", "F"],
-      ["Coaching startup individuel", "S"],
-    ],
-  },
-  {
-    name: "TEF Ideation",
-    desc: "Programme Tony Elumelu Foundation - Phase d'ideation et validation de concept",
-    svc: "career-center",
-    acts: [
-      ["Bootcamp ideation et creativite", "F"],
-      ["Atelier de validation d'idee business", "F"],
-      ["Formation en etude de marche", "F"],
-      ["Workshop de Business Model Canvas", "F"],
-      ["Session de brainstorming guide", "S"],
-      ["Evaluation de faisabilite de projet", "S"],
-    ],
-  },
-  {
-    name: "TEF Acceleration",
-    desc: "Programme Tony Elumelu Foundation - Phase d'acceleration et mise a l'echelle",
-    svc: "career-center",
-    acts: [
-      ["Programme d'acceleration TEF", "F"],
-      ["Formation en gestion financiere startup", "F"],
-      ["Atelier de strategie marketing digital", "F"],
-      ["Formation en management d'equipe startup", "F"],
-      ["Masterclass scaling et internationalisation", "F"],
-      ["Suivi post-acceleration", "S"],
-    ],
-  },
-  {
-    name: "La labellisation des Organisations d'Appui a l'Entrepreneuriat (OAE)",
-    desc: "Programme de labellisation et certification des structures d'accompagnement entrepreneurial",
-    svc: "career-center",
-    acts: [
-      ["Formation aux standards de qualite OAE", "F"],
-      ["Atelier de preparation au label", "F"],
-      ["Audit et diagnostic organisationnel", "S"],
-      ["Accompagnement a la labellisation", "S"],
-      ["Evaluation de conformite", "S"],
-    ],
-  },
-  {
-    name: "Les reformes pour ameliorer l'environnement des affaires des MPME et des startups au Benin",
-    desc: "Programme d'accompagnement lie aux reformes du cadre des affaires pour les micro, petites et moyennes entreprises",
-    svc: "career-center",
-    acts: [
-      ["Seminaire cadre juridique des MPME", "F"],
-      ["Formation en formalisation d'entreprise", "F"],
-      ["Atelier fiscalite des startups au Benin", "F"],
-      ["Formation propriete intellectuelle pour entrepreneurs", "F"],
-      ["Consultation reglementaire", "S"],
-      ["Accompagnement a l'enregistrement d'entreprise", "S"],
-    ],
-  },
+  // ── Incubation Programs Service (5 programs) ──────────────────────
+  { name: "Seme City Film Lab", desc: "Laboratoire de creation et experimentation cinematographique", svc: "programmes-incubation", acts: [
+    ["Residence de creation cinematographique","F"],["Formation Documentaire creatif","F"],
+    ["Atelier Courts-metrages","F"],["Workshop Son et design sonore","F"],
+    ["Formation Animation pour le cinema","F"],["Atelier Scenarisation et storyboard","F"],
+    ["Projection des films du lab","S"],
+  ]},
+  { name: "Fashion Led by Youth", desc: "Programme de formation et incubation dans le design de mode pour les jeunes createurs", svc: "programmes-incubation", acts: [
+    ["Formation Design de mode durable","F"],["Atelier Patronage et couture","F"],
+    ["Formation Stylisme et tendances","F"],["Cours Textile et impression","F"],
+    ["Atelier Accessoires et maroquinerie","F"],["Formation Business de la mode","F"],
+    ["Masterclass Branding de marque de mode","F"],
+    ["Defile et presentation de collections","S"],["Consultation design de mode","S"],
+  ]},
+  { name: "IncubIMA Animation", desc: "Incubateur specialise dans l'animation 2D/3D et le motion design", svc: "programmes-incubation", acts: [
+    ["Formation Animation 2D","F"],["Cours Animation 3D et motion design","F"],
+    ["Atelier Character design","F"],["Formation Storyboarding","F"],
+    ["Workshop Stop-motion","F"],["Atelier Direction artistique animation","F"],
+    ["Revue de portfolio animation","S"],
+  ]},
+  { name: "IncubIMA Narration", desc: "Incubateur dedie a l'ecriture creative et la narration transmedia", svc: "programmes-incubation", acts: [
+    ["Formation Ecriture creative","F"],["Atelier Narration transmedia","F"],
+    ["Cours Storytelling pour le digital","F"],["Formation Ecriture de bande dessinee","F"],
+    ["Workshop Slam et spoken word","F"],["Atelier Podcast et narration audio","F"],
+    ["Lecture et critique de manuscrits","S"],
+  ]},
+  { name: "IncubIMA Jeux Video", desc: "Incubateur specialise dans la creation de jeux video et experiences interactives", svc: "programmes-incubation", acts: [
+    ["Formation Game design et level design","F"],["Cours Programmation de jeux (Unity)","F"],
+    ["Atelier Art pour jeux video","F"],["Formation Sound design pour jeux","F"],
+    ["Game Jam IncubIMA","F"],["Formation Monetisation et publishing","F"],
+    ["Test et feedback de prototypes","S"],
+  ]},
 
-  // ── Recrutement, Accueil et Mobilite (creative, arts, recruitment) ──
-  {
-    name: "Le service recrutement, accueil et mobilite des apprenants et enseignants",
-    desc: "Service d'accompagnement pour le recrutement, l'accueil et la mobilite internationale",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation d'integration culturelle", "F"],
-      ["Atelier procedures administratives au Benin", "F"],
-      ["Formation droit du travail beninois", "F"],
-      ["Atelier de networking professionnel", "F"],
-      ["Assistance visa et titre de sejour", "S"],
-      ["Accompagnement logement", "S"],
-      ["Service de relocation internationale", "S"],
-      ["Accompagnement ouverture de compte bancaire", "S"],
-    ],
-  },
-  {
-    name: "L'Ecole des Arts du Benin",
-    desc: "Ecole de formation aux arts visuels et plastiques contemporains",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation arts plastiques contemporains", "F"],
-      ["Atelier de sculpture et modelage", "F"],
-      ["Cours de peinture - techniques mixtes", "F"],
-      ["Formation en art numerique et creation digitale", "F"],
-      ["Masterclass performance artistique", "F"],
-      ["Atelier de photographie artistique", "F"],
-      ["Exposition et critique d'oeuvres", "S"],
-    ],
-  },
-  {
-    name: "L'African Screen Institute",
-    desc: "Institut de formation aux metiers du cinema et de l'audiovisuel en Afrique",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation en realisation cinematographique", "F"],
-      ["Atelier d'ecriture de scenario", "F"],
-      ["Formation en production audiovisuelle", "F"],
-      ["Cours de montage et post-production", "F"],
-      ["Masterclass direction d'acteurs", "F"],
-      ["Projection et analyse de films africains", "S"],
-    ],
-  },
-  {
-    name: "Les mesures incitatives pour les industries de l'ecran",
-    desc: "Programme de soutien et incitations fiscales pour le developpement des industries cinematographiques",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Seminaire dispositifs fiscaux pour l'audiovisuel", "F"],
-      ["Formation en financement de projets cinema", "F"],
-      ["Atelier montage de dossiers de subvention", "F"],
-      ["Consultation sur les fonds d'aide au cinema", "S"],
-      ["Accompagnement demande d'agrement", "S"],
-    ],
-  },
-  {
-    name: "Seme City Film Lab",
-    desc: "Laboratoire de creation et experimentation cinematographique de Seme City",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Residence de creation cinematographique", "F"],
-      ["Formation en documentaire creatif", "F"],
-      ["Atelier courts-metrages", "F"],
-      ["Workshop son et design sonore", "F"],
-      ["Formation en animation pour le cinema", "F"],
-      ["Projection des films du lab", "S"],
-    ],
-  },
-  {
-    name: "Fashion Led by Youth",
-    desc: "Programme de formation et incubation dans le design de mode pour les jeunes createurs",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation design de mode durable", "F"],
-      ["Atelier de patronage et couture", "F"],
-      ["Formation en stylisme et tendances", "F"],
-      ["Cours de textile et impression", "F"],
-      ["Atelier accessoires et maroquinerie", "F"],
-      ["Defile et presentation de collections", "S"],
-      ["Consultation design de mode", "S"],
-    ],
-  },
-  {
-    name: "IncubIMA Animation",
-    desc: "Incubateur specialise dans l'animation 2D/3D et le motion design",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation animation 2D", "F"],
-      ["Cours d'animation 3D et motion design", "F"],
-      ["Atelier de character design", "F"],
-      ["Formation en storyboarding", "F"],
-      ["Workshop de stop-motion", "F"],
-      ["Revue de portfolio animation", "S"],
-    ],
-  },
-  {
-    name: "IncubIMA Narration",
-    desc: "Incubateur dedie a l'ecriture creative et la narration transmedia",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation en ecriture creative", "F"],
-      ["Atelier de narration transmedia", "F"],
-      ["Cours de storytelling pour le digital", "F"],
-      ["Formation en ecriture de bande dessinee", "F"],
-      ["Workshop de slam et spoken word", "F"],
-      ["Lecture et critique de manuscrits", "S"],
-    ],
-  },
-  {
-    name: "IncubIMA Jeux Video",
-    desc: "Incubateur specialise dans la creation de jeux video et experiences interactives",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation game design et level design", "F"],
-      ["Cours de programmation de jeux (Unity)", "F"],
-      ["Atelier d'art pour jeux video", "F"],
-      ["Formation en sound design pour jeux", "F"],
-      ["Game jam IncubIMA", "F"],
-      ["Test et feedback de prototypes", "S"],
-    ],
-  },
-  {
-    name: "Fab'Studio",
-    desc: "Atelier de fabrication numerique et prototypage rapide",
-    svc: "recrutement-mobilite",
-    acts: [
-      ["Formation impression 3D et prototypage", "F"],
-      ["Atelier de decoupe laser et CNC", "F"],
-      ["Cours d'electronique et Arduino", "F"],
-      ["Formation en CAO/DAO", "F"],
-      ["Workshop de fabrication de PCB", "F"],
-      ["Acces libre au Fab Lab", "S"],
-      ["Consultation projet de fabrication", "S"],
-    ],
-  },
+  // ── Makerspace – SCOP (4 programs) ────────────────────────────────
+  { name: "Les programmes fondamentaux du TechIMA", desc: "Programmes de fabrication numerique du makerspace TechIMA", svc: "makerspace-scop", acts: [
+    ["Formation Impression 3D et prototypage","F"],["Atelier Decoupe laser et CNC","F"],
+    ["Cours Electronique et Arduino","F"],["Formation CAO/DAO","F"],
+    ["Workshop Fabrication de PCB","F"],["Atelier Robotique educative","F"],
+    ["Formation Programmation de microcontroleurs","F"],["Acces libre au Fab Lab","S"],
+  ]},
+  { name: "Digital Artisan", desc: "Programme d'accompagnement des artisans dans l'adoption de la fabrication numerique", svc: "makerspace-scop", acts: [
+    ["Formation Fabrication numerique pour artisans du bois","F"],
+    ["Atelier Fabrication numerique pour artisans du textile","F"],
+    ["Cours Prototypage et developpement produit","F"],["Formation Creation de marque artisanale","F"],
+    ["Atelier Mise en visibilite et e-commerce","F"],["Workshop Design assiste par ordinateur pour artisans","F"],
+    ["Consultation projet artisanal numerique","S"],
+  ]},
+  { name: "TechIMA Seniors", desc: "Programme intergenerationnel de fabrication numerique pour artisans experimentes", svc: "makerspace-scop", acts: [
+    ["Formation Prototypage pour artisans seniors","F"],
+    ["Atelier Transmission intergenerationnelle de savoir-faire","F"],
+    ["Cours Introduction a la fabrication numerique","F"],
+    ["Formation Competences pedagogiques pour jeunes mentors","F"],
+    ["Workshop Documentation de methodes artisanales","F"],
+    ["Accompagnement personnalise artisan senior","S"],
+  ]},
+  { name: "La Fabrique des Metiers d'Art", desc: "Laboratoires dedies aux metiers d'art, transmission, experimentation et production", svc: "makerspace-scop", acts: [
+    ["Formation Tissage traditionnel et contemporain","F"],["Atelier Sculpture sur bois","F"],
+    ["Formation Poterie et ceramique moderne","F"],["Cours Teintures et batik","F"],
+    ["Atelier Vannerie et design","F"],["Formation Maroquinerie artisanale","F"],
+    ["Atelier Ferronnerie d'art","F"],["Exposition et vente d'oeuvres artisanales","S"],
+  ]},
+
+  // ── Innovation Valorization Service (4 programs) ──────────────────
+  { name: "Le barometre de l'innovation", desc: "Outil de mesure et de valorisation des formes d'innovation africaines", svc: "valorisation-innovation", acts: [
+    ["Formation Methodologie de mesure de l'innovation africaine","F"],
+    ["Atelier Conception d'indicateurs d'innovation","F"],
+    ["Seminaire Panorama de l'innovation en Afrique de l'Ouest","F"],
+    ["Formation Enquetes de terrain numeriques","F"],["Atelier Analyse de donnees qualitatives","F"],
+    ["Publication et diffusion du barometre","S"],
+  ]},
+  { name: "Le Ouidah Living Lab", desc: "Laboratoire territorial d'innovation urbaine et environnementale a Ouidah", svc: "valorisation-innovation", acts: [
+    ["Formation Methodologie Living Lab","F"],["Atelier Co-creation de solutions urbaines","F"],
+    ["Seminaire Assainissement et gestion des dechets","F"],
+    ["Formation Eco-construction et materiaux durables","F"],
+    ["Atelier Numerisation du patrimoine culturel","F"],
+    ["Accompagnement de projets d'innovation locale","S"],["Diagnostic territorial participatif","S"],
+  ]},
+  { name: "L'IMA Data & Digital Excellence hub", desc: "Hub de services numeriques et data/IA pour les entreprises", svc: "valorisation-innovation", acts: [
+    ["Formation Developpement logiciel selon standards internationaux","F"],
+    ["Bootcamp Data Science et IA appliquee","F"],
+    ["Formation Services digitaux et operations data","F"],
+    ["Atelier Ethique et gouvernance des donnees","F"],
+    ["Programme d'insertion professionnelle tech","F"],["Formation Data Engineering et pipelines","F"],
+    ["Consultation en transformation digitale","S"],["Accompagnement creation de startup tech","S"],
+  ]},
+  { name: "Le programme MIT REAP - partenariat avec le Ministere de la Sante et l'ASIN", desc: "Programme d'elite du MIT pour structurer des ecosystemes d'innovation en sante", svc: "valorisation-innovation", acts: [
+    ["Seminaire Structuration d'ecosystemes d'innovation","F"],
+    ["Formation Politiques publiques et innovation en sante","F"],
+    ["Atelier Methodologie MIT REAP","F"],
+    ["Workshop Alignement acteurs publics-prives-academiques","F"],
+    ["Masterclass Acceleration HealthTech au Benin","F"],
+    ["Consultation strategie ecosysteme innovation","S"],
+  ]},
+
+  // ── IMA Lingua (1 program) ────────────────────────────────────────
+  { name: "Le centre de langues, IMA Lingua", desc: "Centre de langues multilingue pour la communaute de Seme City et au-dela", svc: "ima-lingua", acts: [
+    ["Formation Anglais professionnel - Niveau B2","F"],["Cours Francais Langue Etrangere - Niveau A2","F"],
+    ["Atelier Conversation en mandarin","F"],["Preparation au DELF B1","F"],
+    ["Formation Espagnol professionnel","F"],["Cours intensif de portugais","F"],
+    ["Atelier Ecriture academique en anglais","F"],["Formation Anglais technique pour ingenieurs","F"],
+    ["Cours Francais des affaires","F"],["Atelier Communication interculturelle","F"],
+    ["Evaluation de niveau linguistique","S"],["Traduction certifiee de documents officiels","S"],
+  ]},
+
+  // ── Career Center (1 program) ─────────────────────────────────────
+  { name: "Le Career Center (service placement)", desc: "Centre de carriere et d'insertion professionnelle des apprenants de Seme City", svc: "career-center", acts: [
+    ["Atelier CV et lettre de motivation","F"],["Simulation d'entretien d'embauche","F"],
+    ["Formation Personal Branding et LinkedIn","F"],["Forum entreprises et recrutement","F"],
+    ["Formation Entrepreneuriat et Business Plan","F"],["Atelier Techniques de recherche d'emploi","F"],
+    ["Formation Communication professionnelle","F"],["Masterclass Reconversion professionnelle","F"],
+    ["Coaching carriere individuel","S"],["Mise en relation entreprises-candidats","S"],
+  ]},
+
+  // ── Recrutement, Accueil et Mobilité (1 program) ──────────────────
+  { name: "Le service recrutement, accueil et mobilite des apprenants et enseignants", desc: "Service pilotant le parcours des apprenants et enseignants a Seme City", svc: "recrutement-mobilite", acts: [
+    ["Formation Integration culturelle","F"],["Atelier Procedures administratives au Benin","F"],
+    ["Formation Droit du travail beninois","F"],["Atelier Networking professionnel","F"],
+    ["Formation Gestion de la mobilite internationale","F"],
+    ["Assistance visa et titre de sejour","S"],["Accompagnement logement","S"],
+    ["Service de relocation internationale","S"],["Accompagnement ouverture de compte bancaire","S"],
+  ]},
+];
+
+// ═══ User definitions ═══════════════════════════════════════════════
+
+const adminDefs = [
+  { name: "Admin Programmes de Formation", email: "admin.formation@semecity.bj" },
+  { name: "Admin Programmes d'Incubation", email: "admin.incubation@semecity.bj" },
+  { name: "Admin Makerspace SCOP", email: "admin.makerspace@semecity.bj" },
+  { name: "Admin Valorisation Innovation", email: "admin.innovation@semecity.bj" },
+  { name: "Admin IMA Lingua", email: "admin.lingua@semecity.bj" },
+  { name: "Admin Career Center", email: "admin.career@semecity.bj" },
+  { name: "Admin Recrutement", email: "admin.recrutement@semecity.bj" },
+];
+
+const respDefs: { name: string; email: string; svc: SvcKey }[] = [
+  { name: "Responsable Programmes de Formation", email: "resp.formation@semecity.bj", svc: "programmes-formation" },
+  { name: "Responsable Programmes d'Incubation", email: "resp.incubation@semecity.bj", svc: "programmes-incubation" },
+  { name: "Responsable Makerspace SCOP", email: "resp.makerspace@semecity.bj", svc: "makerspace-scop" },
+  { name: "Responsable Valorisation Innovation", email: "resp.innovation@semecity.bj", svc: "valorisation-innovation" },
+  { name: "Responsable IMA Lingua", email: "resp.lingua@semecity.bj", svc: "ima-lingua" },
+  { name: "Responsable Career Center", email: "resp.career@semecity.bj", svc: "career-center" },
+  { name: "Responsable Recrutement", email: "resp.recrutement@semecity.bj", svc: "recrutement-mobilite" },
+];
+
+const intervenantDefs: { name: string; email: string; svc: SvcKey }[] = [
+  { name: "Dr. Serge AKAKPO", email: "serge.a@semecity.bj", svc: "programmes-formation" },
+  { name: "Mme. Amara LAWANI", email: "amara.l@semecity.bj", svc: "programmes-formation" },
+  { name: "M. Edmond CHABI", email: "edmond.c@semecity.bj", svc: "programmes-formation" },
+  { name: "M. Yves HOUESSOU", email: "yves.h@semecity.bj", svc: "programmes-incubation" },
+  { name: "Mme. Flora OSSENI", email: "flora.o@semecity.bj", svc: "programmes-incubation" },
+  { name: "M. Bruno ELEGBE", email: "bruno.e@semecity.bj", svc: "makerspace-scop" },
+  { name: "Mme. Simone FAGNON", email: "simone.f@semecity.bj", svc: "makerspace-scop" },
+  { name: "Dr. Patrice GBAGUIDI", email: "patrice.g@semecity.bj", svc: "valorisation-innovation" },
+  { name: "Mme. Diane MONTCHO", email: "diane.m@semecity.bj", svc: "valorisation-innovation" },
+  { name: "Dr. Aristide HOUNKPATIN", email: "aristide.h@semecity.bj", svc: "ima-lingua" },
+  { name: "Mme. Chantal DOSSOU", email: "chantal.d@semecity.bj", svc: "ima-lingua" },
+  { name: "M. Fabrice ADJOVI", email: "fabrice.a@semecity.bj", svc: "career-center" },
+  { name: "Mme. Irene BANKOLE", email: "irene.b@semecity.bj", svc: "career-center" },
+  { name: "M. Koffi MENSAH", email: "koffi.m@semecity.bj", svc: "recrutement-mobilite" },
+  { name: "Mme. Nadege QUENUM", email: "nadege.q@semecity.bj", svc: "recrutement-mobilite" },
 ];
 
 // ═══ Route handler ═══════════════════════════════════════════════════
@@ -550,60 +441,38 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash("password123", 12);
 
     // ── Services ──
-    const [lingua, career, recrutement] = await Promise.all([
-      prisma.service.upsert({ where: { slug: "ima-lingua" }, update: {}, create: { name: "IMA Lingua", slug: "ima-lingua", description: "Institut des Metiers d'Avenir - Lingua" } }),
-      prisma.service.upsert({ where: { slug: "career-center" }, update: {}, create: { name: "Career Center", slug: "career-center", description: "Centre de carriere et d'orientation professionnelle" } }),
-      prisma.service.upsert({ where: { slug: "recrutement-mobilite" }, update: {}, create: { name: "Service Recrutement, Accueil et Mobilite", slug: "recrutement-mobilite", description: "Service de recrutement, accueil et mobilite internationale" } }),
-    ]);
-    const serviceMap: Record<SvcKey, string> = {
-      "ima-lingua": lingua.id,
-      "career-center": career.id,
-      "recrutement-mobilite": recrutement.id,
-    };
+    const serviceMap: Record<SvcKey, string> = {} as any;
+    for (const sd of serviceDefs) {
+      const svc = await prisma.service.upsert({
+        where: { slug: sd.slug },
+        update: {},
+        create: { name: sd.name, slug: sd.slug, description: sd.description },
+      });
+      serviceMap[sd.key] = svc.id;
+    }
 
     // ── Users ──
     await prisma.user.upsert({ where: { email: "superadmin@semecity.bj" }, update: { password: hashedPassword, emailVerified: new Date() }, create: { name: "Super Administrateur", email: "superadmin@semecity.bj", password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() } });
 
-    for (const a of [
-      { name: "Admin IMA Lingua", email: "admin.lingua@semecity.bj" },
-      { name: "Admin Career Center", email: "admin.career@semecity.bj" },
-      { name: "Admin Recrutement", email: "admin.recrutement@semecity.bj" },
-    ]) {
+    for (const a of adminDefs) {
       await prisma.user.upsert({ where: { email: a.email }, update: { password: hashedPassword, emailVerified: new Date() }, create: { ...a, password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() } });
     }
 
-    const respData = [
-      { name: "Responsable IMA Lingua", email: "resp.lingua@semecity.bj", svc: lingua.id },
-      { name: "Responsable Career Center", email: "resp.career@semecity.bj", svc: career.id },
-      { name: "Responsable Recrutement", email: "resp.recrutement@semecity.bj", svc: recrutement.id },
-    ];
     const respUsers: { id: string; svcId: string }[] = [];
-    for (const r of respData) {
+    for (const r of respDefs) {
+      const svcId = serviceMap[r.svc];
       const u = await prisma.user.upsert({ where: { email: r.email }, update: { password: hashedPassword, emailVerified: new Date() }, create: { name: r.name, email: r.email, password: hashedPassword, role: Role.RESPONSABLE_SERVICE, emailVerified: new Date() } });
-      await prisma.userService.upsert({ where: { userId_serviceId: { userId: u.id, serviceId: r.svc } }, update: {}, create: { userId: u.id, serviceId: r.svc } });
-      respUsers.push({ id: u.id, svcId: r.svc });
+      await prisma.userService.upsert({ where: { userId_serviceId: { userId: u.id, serviceId: svcId } }, update: {}, create: { userId: u.id, serviceId: svcId } });
+      respUsers.push({ id: u.id, svcId });
     }
 
-    const intervenantDefs = [
-      { name: "Dr. Aristide HOUNKPATIN", email: "aristide.h@semecity.bj", svc: lingua.id },
-      { name: "Mme. Chantal DOSSOU", email: "chantal.d@semecity.bj", svc: lingua.id },
-      { name: "M. Serge AKAKPO", email: "serge.a@semecity.bj", svc: lingua.id },
-      { name: "Dr. Amara LAWANI", email: "amara.l@semecity.bj", svc: lingua.id },
-      { name: "M. Fabrice ADJOVI", email: "fabrice.a@semecity.bj", svc: career.id },
-      { name: "Mme. Irene BANKOLE", email: "irene.b@semecity.bj", svc: career.id },
-      { name: "M. Pascal GBAGUIDI", email: "pascal.g@semecity.bj", svc: career.id },
-      { name: "Mme. Diane MONTCHO", email: "diane.m@semecity.bj", svc: career.id },
-      { name: "M. Koffi MENSAH", email: "koffi.m@semecity.bj", svc: recrutement.id },
-      { name: "Mme. Nadege QUENUM", email: "nadege.q@semecity.bj", svc: recrutement.id },
-      { name: "M. Yves HOUESSOU", email: "yves.h@semecity.bj", svc: recrutement.id },
-      { name: "Mme. Flora OSSENI", email: "flora.o@semecity.bj", svc: recrutement.id },
-    ];
     const intervenantsBySvc: Record<string, string[]> = {};
     for (const i of intervenantDefs) {
+      const svcId = serviceMap[i.svc];
       const u = await prisma.user.upsert({ where: { email: i.email }, update: { password: hashedPassword, emailVerified: new Date() }, create: { name: i.name, email: i.email, password: hashedPassword, role: Role.INTERVENANT, emailVerified: new Date() } });
-      await prisma.userService.upsert({ where: { userId_serviceId: { userId: u.id, serviceId: i.svc } }, update: {}, create: { userId: u.id, serviceId: i.svc } });
-      if (!intervenantsBySvc[i.svc]) intervenantsBySvc[i.svc] = [];
-      intervenantsBySvc[i.svc].push(u.id);
+      await prisma.userService.upsert({ where: { userId_serviceId: { userId: u.id, serviceId: svcId } }, update: {}, create: { userId: u.id, serviceId: svcId } });
+      if (!intervenantsBySvc[svcId]) intervenantsBySvc[svcId] = [];
+      intervenantsBySvc[svcId].push(u.id);
     }
 
     // ── Participant pool ──
@@ -620,7 +489,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Programs ──
-    const programMap: Record<string, string> = {}; // programDef name → program.id
+    const programMap: Record<string, string> = {};
     for (const pd of programDefs) {
       const prog = await prisma.program.create({
         data: { name: pd.name, description: pd.desc, serviceId: serviceMap[pd.svc] },
@@ -653,7 +522,6 @@ export async function POST(request: NextRequest) {
         const isFormation = typeCode === "F";
         const actType = isFormation ? "FORMATION" : "SERVICE";
 
-        // Spread activities across the date range
         const activityDate = new Date(
           startRange.getTime() + (rangeMs / pd.acts.length) * ai + randomInt(0, 15) * 86400000
         );
@@ -662,139 +530,72 @@ export async function POST(request: NextRequest) {
         if (activityDate < new Date("2025-06-01")) status = "CLOSED";
         else if (activityDate > new Date("2026-02-01")) status = "DRAFT";
 
-        const intervenantId = randomChoice(intervenants);
+        const intervenantId = intervenants.length > 0 ? randomChoice(intervenants) : resp.id;
         const location = randomChoice(locs);
 
-        const sessionCount = isFormation ? randomInt(3, 12) : 1;
+        const sessionCount = isFormation ? randomInt(3, 15) : randomInt(1, 3);
         const activityEndDate = new Date(activityDate.getTime() + (sessionCount - 1) * 7 * 86400000);
 
         const activity = await prisma.activity.create({
           data: {
             title,
             description: `${title} — programme « ${pd.name} »`,
-            startDate: activityDate,
-            endDate: activityEndDate,
-            location,
-            status,
-            type: actType,
-            serviceId,
-            createdById: resp.id,
-            intervenantId,
-            programId,
+            startDate: activityDate, endDate: activityEndDate,
+            location, status, type: actType,
+            serviceId, createdById: resp.id, intervenantId, programId,
             accessToken: uid(),
           },
         });
         totalActivities++;
 
-        // ── Sessions ──
+        // Sessions
         const timeVariations = ["08:00", "08:30", "09:00", "09:30", "10:00"];
         const endTimeVariations = ["16:00", "16:30", "17:00", "17:30", "18:00"];
         const sessions: { id: string; date: Date }[] = [];
 
         for (let s = 0; s < sessionCount; s++) {
           const sessionDate = new Date(activityDate.getTime() + s * 7 * 86400000);
-          const sTime = randomChoice(timeVariations);
-          const eTime = randomChoice(endTimeVariations);
           const session = await prisma.activitySession.create({
             data: {
-              title: isFormation ? `Seance ${s + 1}` : null,
-              startDate: sessionDate,
-              endDate: sessionDate,
-              startTime: sTime,
-              endTime: eTime,
-              location,
-              intervenantId,
-              activityId: activity.id,
-              accessToken: uid(),
-              isDefault: s === 0,
+              title: isFormation ? `Seance ${s + 1}` : (sessionCount > 1 ? `Session ${s + 1}` : null),
+              startDate: sessionDate, endDate: sessionDate,
+              startTime: randomChoice(timeVariations), endTime: randomChoice(endTimeVariations),
+              location, intervenantId,
+              activityId: activity.id, accessToken: uid(), isDefault: s === 0,
             },
           });
           sessions.push({ id: session.id, date: sessionDate });
           totalSessions++;
         }
 
-        // ── Participants & Feedbacks ──
+        // Participants & Feedbacks
         const numParticipants = isFormation ? randomInt(10, 25) : randomInt(5, 15);
         const participants = shuffle(participantPool).slice(0, numParticipants);
 
         if (isFormation && sessions.length > 1) {
-          // FORMATION: each participant attends 40-100% of sessions
           for (const p of participants) {
             const attendRate = 0.4 + Math.random() * 0.6;
-            const sessionsToAttend = shuffle(sessions).slice(
-              0, Math.max(1, Math.round(sessions.length * attendRate))
-            );
-
+            const sessionsToAttend = shuffle(sessions).slice(0, Math.max(1, Math.round(sessions.length * attendRate)));
             for (const sess of sessionsToAttend) {
-              attendanceBatch.push({
-                firstName: p.firstName, lastName: p.lastName, email: p.email,
-                phone: p.phone, organization: p.org,
-                activityId: activity.id, sessionId: sess.id,
-                createdAt: sess.date,
-              });
+              attendanceBatch.push({ firstName: p.firstName, lastName: p.lastName, email: p.email, phone: p.phone, organization: p.org, activityId: activity.id, sessionId: sess.id, createdAt: sess.date });
               totalAttendances++;
-
               if (Math.random() < 0.6) {
-                feedbackBatch.push({
-                  feedbackType: "FORMATION",
-                  overallRating: randomInt(2, 5),
-                  contentRating: randomInt(2, 5),
-                  organizationRating: randomInt(3, 5),
-                  comment: randomChoice(formationComments),
-                  suggestions: randomChoice(formationSuggestions),
-                  wouldRecommend: Math.random() > 0.18,
-                  participantName: `${p.firstName} ${p.lastName}`,
-                  participantEmail: p.email,
-                  activityId: activity.id,
-                  sessionId: sess.id,
-                  createdAt: new Date(sess.date.getTime() + randomInt(1, 48) * 3600000),
-                });
+                feedbackBatch.push({ feedbackType: "FORMATION", overallRating: randomInt(2, 5), contentRating: randomInt(2, 5), organizationRating: randomInt(3, 5), comment: randomChoice(formationComments), suggestions: randomChoice(formationSuggestions), wouldRecommend: Math.random() > 0.18, participantName: `${p.firstName} ${p.lastName}`, participantEmail: p.email, activityId: activity.id, sessionId: sess.id, createdAt: new Date(sess.date.getTime() + randomInt(1, 48) * 3600000) });
                 totalFeedbacks++;
               }
             }
           }
         } else {
-          // SERVICE or single-session FORMATION
           const sess = sessions[0];
           for (const p of participants) {
-            attendanceBatch.push({
-              firstName: p.firstName, lastName: p.lastName, email: p.email,
-              phone: p.phone, organization: p.org,
-              activityId: activity.id, sessionId: sess.id,
-              createdAt: new Date(sess.date.getTime() + randomInt(0, 24) * 3600000),
-            });
+            attendanceBatch.push({ firstName: p.firstName, lastName: p.lastName, email: p.email, phone: p.phone, organization: p.org, activityId: activity.id, sessionId: sess.id, createdAt: new Date(sess.date.getTime() + randomInt(0, 24) * 3600000) });
             totalAttendances++;
-
             if (Math.random() < 0.65) {
               if (isFormation) {
-                feedbackBatch.push({
-                  feedbackType: "FORMATION",
-                  overallRating: randomInt(2, 5),
-                  contentRating: randomInt(2, 5),
-                  organizationRating: randomInt(3, 5),
-                  comment: randomChoice(formationComments),
-                  suggestions: randomChoice(formationSuggestions),
-                  wouldRecommend: Math.random() > 0.18,
-                  participantName: `${p.firstName} ${p.lastName}`,
-                  participantEmail: p.email,
-                  activityId: activity.id,
-                  sessionId: sess.id,
-                  createdAt: new Date(sess.date.getTime() + randomInt(1, 48) * 3600000),
-                });
+                feedbackBatch.push({ feedbackType: "FORMATION", overallRating: randomInt(2, 5), contentRating: randomInt(2, 5), organizationRating: randomInt(3, 5), comment: randomChoice(formationComments), suggestions: randomChoice(formationSuggestions), wouldRecommend: Math.random() > 0.18, participantName: `${p.firstName} ${p.lastName}`, participantEmail: p.email, activityId: activity.id, sessionId: sess.id, createdAt: new Date(sess.date.getTime() + randomInt(1, 48) * 3600000) });
               } else {
                 const sat = randomInt(2, 5);
-                feedbackBatch.push({
-                  feedbackType: "SERVICE",
-                  satisfactionRating: sat,
-                  informationClarity: Math.random() > 0.22,
-                  improvementSuggestion: randomChoice(serviceImprovements),
-                  wouldRecommend: sat >= 3 && Math.random() > 0.12,
-                  participantName: `${p.firstName} ${p.lastName}`,
-                  participantEmail: p.email,
-                  activityId: activity.id,
-                  sessionId: sess.id,
-                  createdAt: new Date(sess.date.getTime() + randomInt(1, 72) * 3600000),
-                });
+                feedbackBatch.push({ feedbackType: "SERVICE", satisfactionRating: sat, informationClarity: Math.random() > 0.22, improvementSuggestion: randomChoice(serviceImprovements), wouldRecommend: sat >= 3 && Math.random() > 0.12, participantName: `${p.firstName} ${p.lastName}`, participantEmail: p.email, activityId: activity.id, sessionId: sess.id, createdAt: new Date(sess.date.getTime() + randomInt(1, 72) * 3600000) });
               }
               totalFeedbacks++;
             }
@@ -802,26 +603,22 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Bulk insert attendances & feedbacks per program (avoid unique constraint issues)
-      // Deduplicate by (sessionId, email)
+      // Deduplicate & bulk insert
       const seenAttKeys = new Set<string>();
-      const dedupedAtt = attendanceBatch.filter((a: { sessionId: string; email: string }) => {
+      const dedupedAtt = attendanceBatch.filter((a) => {
         const key = `${a.sessionId}:${a.email}`;
         if (seenAttKeys.has(key)) return false;
         seenAttKeys.add(key);
         return true;
       });
-
-      // Deduplicate feedbacks by (sessionId, participantEmail)
       const seenFbKeys = new Set<string>();
-      const dedupedFb = feedbackBatch.filter((f: Record<string, unknown>) => {
+      const dedupedFb = feedbackBatch.filter((f) => {
         const key = `${f.sessionId}:${f.participantEmail}`;
         if (seenFbKeys.has(key)) return false;
         seenFbKeys.add(key);
         return true;
       });
 
-      // Insert in chunks of 500
       for (let i = 0; i < dedupedAtt.length; i += 500) {
         await prisma.attendance.createMany({ data: dedupedAtt.slice(i, i + 500) });
       }
@@ -829,17 +626,16 @@ export async function POST(request: NextRequest) {
         await prisma.feedback.createMany({ data: dedupedFb.slice(i, i + 500) as any });
       }
 
-      // Adjust counts after dedup
-      totalAttendances = totalAttendances - (attendanceBatch.length - dedupedAtt.length);
-      totalFeedbacks = totalFeedbacks - (feedbackBatch.length - dedupedFb.length);
+      totalAttendances -= (attendanceBatch.length - dedupedAtt.length);
+      totalFeedbacks -= (feedbackBatch.length - dedupedFb.length);
     }
 
     return NextResponse.json({
       success: true,
       message: "Seed complet execute avec succes",
       data: {
-        services: 3,
-        users: 1 + 3 + 3 + intervenantDefs.length,
+        services: serviceDefs.length,
+        users: 1 + adminDefs.length + respDefs.length + intervenantDefs.length,
         programs: programDefs.length,
         activities: totalActivities,
         sessions: totalSessions,
