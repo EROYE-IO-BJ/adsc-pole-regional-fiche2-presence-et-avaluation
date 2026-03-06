@@ -18,12 +18,12 @@ export function createRequest(
     init.headers = { "Content-Type": "application/json" };
   }
 
-  return new NextRequest(url, init);
+  return new NextRequest(url, init as any);
 }
 
-export async function createParams(
+export function createParams(
   params: Record<string, string>
-): Promise<{ params: Promise<Record<string, string>> }> {
+): { params: Promise<any> } {
   return { params: Promise.resolve(params) };
 }
 
