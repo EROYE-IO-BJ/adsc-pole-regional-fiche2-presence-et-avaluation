@@ -5,10 +5,12 @@ import type { ClarityRate } from "@/types/dashboard";
 
 interface Props {
   data: ClarityRate;
+  onSegmentClick?: (value: "yes" | "no") => void;
 }
 
-export function ClarityRateCard({ data }: Props) {
+export function ClarityRateCard({ data, onSegmentClick }: Props) {
   const rate = data.total > 0 ? Math.round((data.yes / data.total) * 100) : 0;
+  const clickable = !!onSegmentClick;
 
   return (
     <Card>
@@ -28,8 +30,22 @@ export function ClarityRateCard({ data }: Props) {
               trouvent l&apos;information claire
             </p>
             <div className="flex justify-center gap-4 pt-2 text-sm">
-              <span className="text-green-600">Oui : {data.yes}</span>
-              <span className="text-red-500">Non : {data.no}</span>
+              <button
+                type="button"
+                onClick={() => onSegmentClick?.("yes")}
+                className={`text-green-600 ${clickable ? "hover:underline cursor-pointer font-medium" : ""}`}
+                disabled={!clickable}
+              >
+                Oui : {data.yes}
+              </button>
+              <button
+                type="button"
+                onClick={() => onSegmentClick?.("no")}
+                className={`text-red-500 ${clickable ? "hover:underline cursor-pointer font-medium" : ""}`}
+                disabled={!clickable}
+              >
+                Non : {data.no}
+              </button>
             </div>
           </div>
         )}

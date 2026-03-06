@@ -12,6 +12,7 @@ import { TopIntervenants } from "./rankings/top-intervenants";
 import { TopActivities } from "./rankings/top-activities";
 import { ClarityRateCard } from "./feedback/clarity-rate";
 import { RecommendationRateCard } from "./feedback/recommendation-rate";
+import { FeedbackDetailDialog } from "./feedback-detail-dialog";
 
 interface DashboardChartsProps {
   serviceId?: string;
@@ -21,6 +22,12 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
   const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dialogState, setDialogState] = useState<{
+    open: boolean;
+    title: string;
+    filter: string;
+    value: string;
+  }>({ open: false, title: "", filter: "", value: "" });
 
   useEffect(() => {
     async function fetchStats() {
@@ -40,6 +47,10 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
     }
     fetchStats();
   }, [serviceId]);
+
+  function openFeedbackDialog(title: string, filter: string, value: string) {
+    setDialogState({ open: true, title, filter, value });
+  }
 
   if (loading) {
     return (
@@ -82,9 +93,40 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
 
       {/* Row 3: Rating distribution + Feedback indicators */}
       <div className="grid gap-4 md:grid-cols-3">
-        <RatingDistributionChart data={data.ratingDistribution} />
-        <ClarityRateCard data={data.clarityRate} />
-        <RecommendationRateCard data={data.recommendationRate} />
+        <RatingDistributionChart
+          data={data.ratingDistribution}
+          onBarClick={(rating) =>
+            openFeedbackDialog(
+              `Feedbacks avec ${rating} étoile${rating > 1 ? "s" : ""}`,
+              "rating",
+              String(rating)
+            )
+          }
+        />
+        <ClarityRateCard
+          data={data.clarityRate}
+          onSegmentClick={(value) =>
+            openFeedbackDialog(
+              value === "yes"
+                ? "Feedbacks : information claire"
+                : "Feedbacks : information pas claire",
+              "clarity",
+              value
+            )
+          }
+        />
+        <RecommendationRateCard
+          data={data.recommendationRate}
+          onSegmentClick={(value) =>
+            openFeedbackDialog(
+              value === "yes"
+                ? "Feedbacks : recommandent"
+                : "Feedbacks : ne recommandent pas",
+              "recommendation",
+              value
+            )
+          }
+        />
       </div>
 
       {/* Row 4: Rankings */}
@@ -93,6 +135,15 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
         <TopIntervenants data={data.topIntervenants} />
         <TopActivities data={data.topActivities} />
       </div>
+
+      <FeedbackDetailDialog
+        open={dialogState.open}
+        onOpenChange={(open) => setDialogState((s) => ({ ...s, open }))}
+        title={dialogState.title}
+        filter={dialogState.filter}
+        value={dialogState.value}
+        serviceId={serviceId}
+      />
     </div>
   );
 }

@@ -35,13 +35,13 @@ export function TopActivities({ data }: Props) {
         <CardTitle className="text-lg">Top 5 Activités</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {[...data].reverse().map((activity, index) => (
+        {data.map((activity, index) => (
           <div
             key={activity.id}
             className="flex items-center gap-3 rounded-md border p-3"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#10b981]/10 text-sm font-bold text-[#10b981]">
-              {data.length - index}
+              {index + 1}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{activity.title}</p>
