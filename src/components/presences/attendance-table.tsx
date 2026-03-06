@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, FileText } from "lucide-react";
 import { PdfImportDialog } from "@/components/import/pdf-import-dialog";
 
 interface SessionInfo {
@@ -35,20 +35,32 @@ interface SessionData {
   [key: string]: any;
 }
 
+interface ParticipationEntry {
+  firstName: string;
+  lastName: string;
+  email: string;
+  organization: string | null;
+  sessionsPresent: number;
+  totalSessions: number;
+  participationRate: number;
+}
+
 interface AttendanceTableProps {
   attendances: Attendance[];
   activityId: string;
   canImport?: boolean;
   sessions?: SessionData[];
   activityType?: string;
+  participationData?: ParticipationEntry[];
 }
 
-export function AttendanceTable({ attendances, activityId, canImport, sessions, activityType }: AttendanceTableProps) {
+export function AttendanceTable({ attendances, activityId, canImport, sessions, activityType, participationData }: AttendanceTableProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("all");
 
   const isFormation = activityType === "FORMATION";
   const showSessionFilter = isFormation && sessions && sessions.length > 1;
+  const showParticipationView = participationData && participationData.length > 0 && selectedSessionId === "all";
 
   const filteredAttendances = useMemo(() => {
     if (selectedSessionId === "all") return attendances;
@@ -57,6 +69,12 @@ export function AttendanceTable({ attendances, activityId, canImport, sessions, 
 
   function handleExport() {
     const params = new URLSearchParams({ format: "csv", type: "attendances" });
+    if (selectedSessionId !== "all") params.set("sessionId", selectedSessionId);
+    window.open(`/api/activites/${activityId}/export?${params}`, "_blank");
+  }
+
+  function handlePdfExport() {
+    const params = new URLSearchParams({ format: "pdf" });
     if (selectedSessionId !== "all") params.set("sessionId", selectedSessionId);
     window.open(`/api/activites/${activityId}/export?${params}`, "_blank");
   }
@@ -94,15 +112,56 @@ export function AttendanceTable({ attendances, activityId, canImport, sessions, 
             </Button>
           )}
           {filteredAttendances.length > 0 && (
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" />
-              Exporter CSV
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={handlePdfExport}>
+                <FileText className="mr-2 h-4 w-4" />
+                Exporter PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                Exporter CSV
+              </Button>
+            </>
           )}
         </div>
       </CardHeader>
       <CardContent>
-        {filteredAttendances.length === 0 ? (
+        {showParticipationView ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">Nom</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Email</th>
+                  <th className="pb-3 font-medium text-muted-foreground hidden md:table-cell">
+                    Organisation
+                  </th>
+                  <th className="pb-3 font-medium text-muted-foreground">Séances</th>
+                  <th className="pb-3 font-medium text-muted-foreground">Taux</th>
+                </tr>
+              </thead>
+              <tbody>
+                {participationData.map((p) => (
+                  <tr key={p.email} className="border-b last:border-0">
+                    <td className="py-3">
+                      {p.firstName} {p.lastName}
+                    </td>
+                    <td className="py-3">{p.email}</td>
+                    <td className="py-3 hidden md:table-cell">
+                      {p.organization || "-"}
+                    </td>
+                    <td className="py-3">{p.sessionsPresent}/{p.totalSessions}</td>
+                    <td className="py-3">
+                      <span className={p.participationRate >= 75 ? "text-green-600" : p.participationRate >= 50 ? "text-yellow-600" : "text-red-600"}>
+                        {p.participationRate}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : filteredAttendances.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-8">
             Aucune présence enregistrée pour le moment.
           </p>

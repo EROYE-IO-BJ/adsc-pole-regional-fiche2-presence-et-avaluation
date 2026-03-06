@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, UserCheck, Users, MessageSquare, Plus, QrCode, Trash2 } from "lucide-react";
 import { SessionForm } from "./session-form";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface SessionData {
   id: string;
@@ -89,7 +90,10 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
                   key={s.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md border p-4"
                 >
-                  <div className="space-y-1">
+                  <Link
+                    href={`/activites/${activityId}/seances/${s.id}`}
+                    className="space-y-1 flex-1 hover:opacity-75 transition-opacity cursor-pointer"
+                  >
                     <div className="flex items-center gap-2">
                       <p className="font-medium">
                         {s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`}
@@ -119,7 +123,7 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
                         </span>
                       )}
                     </div>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-3">
                     <div className="flex gap-3 text-sm">
                       <span className="flex items-center gap-1 text-[#2980B9]">

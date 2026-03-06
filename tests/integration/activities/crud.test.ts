@@ -5,9 +5,17 @@ import { mockAuthUser, createTestUsers } from "../../helpers/auth";
 import { prisma } from "../../helpers/prisma";
 
 let users: Awaited<ReturnType<typeof createTestUsers>>;
+let program: { id: string };
+let program2: { id: string };
 
 beforeEach(async () => {
   users = await createTestUsers(prisma);
+  program = await prisma.program.create({
+    data: { name: "Programme Test", serviceId: users.service.id },
+  });
+  program2 = await prisma.program.create({
+    data: { name: "Programme Autre", serviceId: users.service2.id },
+  });
 });
 
 describe("POST /api/activites", () => {
@@ -20,6 +28,7 @@ describe("POST /api/activites", () => {
         date: "2025-07-01",
         type: "FORMATION",
         serviceId: users.service.id,
+        programId: program.id,
       },
     });
 
@@ -65,6 +74,7 @@ describe("POST /api/activites", () => {
         date: "2025-07-01",
         type: "FORMATION",
         serviceId: users.service.id,
+        programId: program.id,
       },
     });
 
@@ -82,6 +92,7 @@ describe("POST /api/activites", () => {
         date: "2025-07-01",
         type: "FORMATION",
         serviceId: users.service2.id,
+        programId: program2.id,
       },
     });
 

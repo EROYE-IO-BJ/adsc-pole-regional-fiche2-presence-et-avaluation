@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Share2, CalendarDays, MapPin, Users, MessageSquare, UserCheck, ClipboardList } from "lucide-react";
+import { ArrowLeft, Share2, CalendarDays, MapPin, UserCheck, ClipboardList } from "lucide-react";
+import { KpiStats } from "@/components/activites/kpi-stats";
 import Link from "next/link";
 import { AttendanceTable } from "@/components/presences/attendance-table";
 import { FeedbackList } from "@/components/retours/feedback-list";
@@ -124,6 +125,34 @@ export default async function ActivityDetailPage({
 
   const canEdit = userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE;
 
+  // Calculate participation data for formations (group by email)
+  const participationData = isFormation && activity.sessions.length > 1
+    ? (() => {
+        const totalSessions = activity.sessions.length;
+        const byEmail = new Map<string, { firstName: string; lastName: string; email: string; organization: string | null; sessionsPresent: number }>();
+        for (const att of activity.attendances) {
+          const key = att.email.toLowerCase();
+          const existing = byEmail.get(key);
+          if (existing) {
+            existing.sessionsPresent += 1;
+          } else {
+            byEmail.set(key, {
+              firstName: att.firstName,
+              lastName: att.lastName,
+              email: att.email,
+              organization: att.organization,
+              sessionsPresent: 1,
+            });
+          }
+        }
+        return Array.from(byEmail.values()).map((p) => ({
+          ...p,
+          totalSessions,
+          participationRate: Math.round((p.sessionsPresent / totalSessions) * 100),
+        }));
+      })()
+    : undefined;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -198,58 +227,12 @@ export default async function ActivityDetailPage({
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="flex justify-center mb-2">
-              <Users className="h-5 w-5 text-[#2980B9]" />
-            </div>
-            <div className="text-2xl font-bold">{activity._count.attendances}</div>
-            <p className="text-xs text-muted-foreground">Présences</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="flex justify-center mb-2">
-              <MessageSquare className="h-5 w-5 text-[#D4A017]" />
-            </div>
-            <div className="text-2xl font-bold">{activity._count.feedbacks}</div>
-            <p className="text-xs text-muted-foreground">Feedbacks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="text-2xl font-bold">
-              {isService
-                ? feedbackStats && "avgSatisfaction" in feedbackStats
-                  ? `${feedbackStats.avgSatisfaction}/5`
-                  : "N/A"
-                : feedbackStats && "avgOverall" in feedbackStats
-                  ? `${feedbackStats.avgOverall}/5`
-                  : "N/A"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isService ? "Satisfaction" : "Note moyenne"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="text-2xl font-bold">
-              {isService
-                ? feedbackStats && "clarityPercent" in feedbackStats
-                  ? `${feedbackStats.clarityPercent}%`
-                  : "N/A"
-                : feedbackStats && "recommendPercent" in feedbackStats
-                  ? `${feedbackStats.recommendPercent}%`
-                  : "N/A"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isService ? "Clarté" : "Recommandent"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiStats
+        attendancesCount={activity._count.attendances}
+        feedbacksCount={activity._count.feedbacks}
+        feedbackStats={feedbackStats}
+        isService={isService}
+      />
 
       {/* Tabs */}
       <Tabs defaultValue="presences">
@@ -279,6 +262,7 @@ export default async function ActivityDetailPage({
             canImport={canEdit}
             sessions={activity.sessions}
             activityType={activity.type}
+            participationData={participationData}
           />
         </TabsContent>
 

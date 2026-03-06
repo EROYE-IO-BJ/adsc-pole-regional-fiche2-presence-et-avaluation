@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserServiceIds, handleAuthError } from "@/lib/authorization";
 import { Role } from "@prisma/client";
+import { generateAttendancePdf } from "@/lib/pdf/generate-attendance-pdf";
 
 // GET /api/activites/[id]/export?format=csv
 export async function GET(
@@ -26,6 +27,9 @@ export async function GET(
   const activity = await prisma.activity.findUnique({
     where: { id },
     include: {
+      service: { select: { name: true } },
+      program: { select: { name: true } },
+      intervenant: { select: { name: true } },
       attendances: {
         where: sessionFilter,
         orderBy: [{ importOrder: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
@@ -149,6 +153,47 @@ export async function GET(
     return new NextResponse(csvContent, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
+  }
+
+  if (format === "pdf") {
+    // Find session title if filtering by session
+    let sessionTitle: string | null = null;
+    if (sessionId) {
+      const session = await prisma.activitySession.findUnique({
+        where: { id: sessionId },
+        select: { title: true, date: true },
+      });
+      sessionTitle = session?.title || (session ? new Date(session.date).toLocaleDateString("fr-FR") : null);
+    }
+
+    const pdfBytes = await generateAttendancePdf(
+      {
+        title: activity.title,
+        date: activity.date,
+        location: activity.location,
+        serviceName: activity.service.name,
+        programName: activity.program?.name || null,
+        intervenantName: activity.intervenant?.name || null,
+        sessionTitle,
+      },
+      activity.attendances.map((a) => ({
+        firstName: a.firstName,
+        lastName: a.lastName,
+        email: a.email,
+        organization: a.organization,
+        signature: a.signature,
+        sessionTitle: a.session?.title || (a.session ? new Date(a.session.date).toLocaleDateString("fr-FR") : undefined),
+        createdAt: a.createdAt,
+      }))
+    );
+
+    const filename = `presences-${activity.title.replace(/\s+/g, "-")}.pdf`;
+    return new NextResponse(Buffer.from(pdfBytes), {
+      headers: {
+        "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });

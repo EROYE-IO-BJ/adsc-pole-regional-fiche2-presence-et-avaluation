@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const createActivitySchema = z.object({
+const activityBaseSchema = z.object({
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
   description: z.string().optional(),
   date: z.string().min(1, "La date est requise"),
@@ -12,7 +12,12 @@ export const createActivitySchema = z.object({
   programId: z.string().optional(),
 });
 
-export const updateActivitySchema = createActivitySchema.partial();
+export const createActivitySchema = activityBaseSchema.refine(
+  (data) => data.type !== "FORMATION" || (data.programId && data.programId.length > 0),
+  { message: "Le programme est requis pour une formation", path: ["programId"] }
+);
+
+export const updateActivitySchema = activityBaseSchema.partial();
 
 export type CreateActivityInput = z.infer<typeof createActivitySchema>;
 export type UpdateActivityInput = z.infer<typeof updateActivitySchema>;

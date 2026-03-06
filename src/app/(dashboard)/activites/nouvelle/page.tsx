@@ -84,9 +84,7 @@ export default function NewActivityPage() {
       data.serviceId = selectedServiceId || (formData.get("serviceId") as string);
     }
 
-    if (activityType === "SERVICE") {
-      data.programId = (formData.get("programId") as string) || undefined;
-    }
+    data.programId = (formData.get("programId") as string) || undefined;
 
     const res = await fetch("/api/activites", {
       method: "POST",
@@ -208,32 +206,32 @@ export default function NewActivityPage() {
               </div>
             )}
 
-            {/* Program selector for SERVICE type */}
-            {activityType === "SERVICE" && (
-              <div className="space-y-2">
-                <Label htmlFor="programId">Programme *</Label>
-                <Select name="programId" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un programme" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredPrograms.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {filteredPrograms.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Aucun programme disponible.{" "}
-                    <Link href="/admin/programmes/nouveau" className="text-primary underline">
-                      Créer un programme
-                    </Link>
-                  </p>
-                )}
-              </div>
-            )}
+            {/* Program selector */}
+            <div className="space-y-2">
+              <Label htmlFor="programId">
+                Programme {activityType === "FORMATION" ? "*" : ""}
+              </Label>
+              <Select name="programId" required={activityType === "FORMATION"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un programme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredPrograms.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {filteredPrograms.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Aucun programme disponible.{" "}
+                  <Link href="/admin/programmes/nouveau" className="text-primary underline">
+                    Créer un programme
+                  </Link>
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Statut</Label>
