@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserServiceIds } from "@/lib/authorization";
+import { requireAuth, getUserServiceIds, userCanAccessService } from "@/lib/authorization";
 import { Role } from "@prisma/client";
 import type { DashboardStats } from "@/types/dashboard";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth();
     const activityWhere: any = {};
@@ -14,6 +14,18 @@ export async function GET() {
       activityWhere.serviceId = { in: serviceIds };
     } else if (user.role === Role.INTERVENANT) {
       activityWhere.intervenantId = user.id;
+    }
+
+    // Apply serviceId filter from query params
+    const serviceId = request.nextUrl.searchParams.get("serviceId");
+    if (serviceId) {
+      if (user.role === Role.RESPONSABLE_SERVICE) {
+        const hasAccess = await userCanAccessService(user.id, serviceId);
+        if (!hasAccess) {
+          return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
+        }
+      }
+      activityWhere.serviceId = serviceId;
     }
 
     const feedbackWhere = { activity: activityWhere };

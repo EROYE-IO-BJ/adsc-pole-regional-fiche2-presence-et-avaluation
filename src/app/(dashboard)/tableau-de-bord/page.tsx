@@ -6,9 +6,16 @@ import { CalendarDays, Users, MessageSquare, TrendingUp, BarChart3, ThumbsUp } f
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { ServiceFilter } from "@/components/dashboard/service-filter";
+import { ServiceKPITable } from "@/components/dashboard/service-kpi-table";
 import { Role } from "@prisma/client";
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{ serviceId?: string }>;
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const { serviceId } = await searchParams;
   const session = await auth();
   const userRole = session?.user?.role;
   const userId = session?.user?.id;
@@ -22,6 +29,11 @@ export default async function DashboardPage() {
     activityWhere.intervenantId = userId;
   }
   // ADMIN: no filter (sees all)
+
+  // Apply serviceId filter
+  if (serviceId) {
+    activityWhere.serviceId = serviceId;
+  }
 
   const [activitiesCount, attendancesCount, feedbacksCount, recentActivities, recommendCount] =
     await Promise.all([
@@ -121,6 +133,9 @@ export default async function DashboardPage() {
         )}
       </div>
 
+      {/* Service Filter */}
+      <ServiceFilter />
+
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
@@ -140,8 +155,11 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* Service KPI Table */}
+      <ServiceKPITable />
+
       {/* Charts */}
-      <DashboardCharts />
+      <DashboardCharts serviceId={serviceId} />
 
       {/* Recent Activities */}
       <Card>

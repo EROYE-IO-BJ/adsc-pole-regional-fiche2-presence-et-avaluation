@@ -13,15 +13,22 @@ import { TopActivities } from "./rankings/top-activities";
 import { ClarityRateCard } from "./feedback/clarity-rate";
 import { RecommendationRateCard } from "./feedback/recommendation-rate";
 
-export function DashboardCharts() {
+interface DashboardChartsProps {
+  serviceId?: string;
+}
+
+export function DashboardCharts({ serviceId }: DashboardChartsProps) {
   const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch("/api/dashboard/stats");
+        const params = serviceId ? `?serviceId=${serviceId}` : "";
+        const res = await fetch(`/api/dashboard/stats${params}`);
         if (!res.ok) throw new Error("Erreur lors du chargement");
         const stats: DashboardStats = await res.json();
         setData(stats);
@@ -32,7 +39,7 @@ export function DashboardCharts() {
       }
     }
     fetchStats();
-  }, []);
+  }, [serviceId]);
 
   if (loading) {
     return (

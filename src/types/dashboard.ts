@@ -62,6 +62,17 @@ export interface RecommendationRate {
   total: number;
 }
 
+export interface ServiceKPI {
+  serviceId: string;       // "GLOBAL" pour la ligne totale
+  serviceName: string;
+  activitiesCount: number;
+  attendancesCount: number;
+  feedbacksCount: number;
+  avgRating: number | null;
+  feedbackRate: number;
+  recommendationRate: number;
+}
+
 export interface DashboardStats {
   monthlyTrends: MonthlyTrend[];
   typeDistribution: TypeDistribution[];
