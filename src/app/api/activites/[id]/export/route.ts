@@ -28,7 +28,7 @@ export async function GET(
     include: {
       attendances: {
         where: sessionFilter,
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ importOrder: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
         include: { session: { select: { title: true, date: true } } },
       },
       feedbacks: {

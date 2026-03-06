@@ -137,6 +137,74 @@ describe("POST /api/import/save", () => {
     expect(data.duplicates).toBe(1);
   });
 
+  it("should preserve PDF order via importOrder field", async () => {
+    mockAuthUser(users.admin);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+
+    const req = createRequest("POST", "/api/import/save", {
+      body: {
+        activityId: activity.id,
+        participants: [
+          { firstName: "Zara", lastName: "Alpha", email: "zara@test.com" },
+          { firstName: "Alice", lastName: "Beta", email: "alice@test.com" },
+          { firstName: "Marc", lastName: "Gamma", email: "marc@test.com" },
+        ],
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(200);
+
+    const attendances = await prisma.attendance.findMany({
+      where: { activityId: activity.id },
+      orderBy: { importOrder: "asc" },
+    });
+
+    expect(attendances).toHaveLength(3);
+    expect(attendances[0].firstName).toBe("Zara");
+    expect(attendances[0].importOrder).toBe(0);
+    expect(attendances[1].firstName).toBe("Alice");
+    expect(attendances[1].importOrder).toBe(1);
+    expect(attendances[2].firstName).toBe("Marc");
+    expect(attendances[2].importOrder).toBe(2);
+  });
+
+  it("should continue importOrder from existing attendances", async () => {
+    mockAuthUser(users.admin);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+
+    // First import
+    await POST(createRequest("POST", "/api/import/save", {
+      body: {
+        activityId: activity.id,
+        participants: [
+          { firstName: "First", lastName: "User", email: "first@test.com" },
+        ],
+      },
+    }));
+
+    // Second import
+    await POST(createRequest("POST", "/api/import/save", {
+      body: {
+        activityId: activity.id,
+        participants: [
+          { firstName: "Second", lastName: "User", email: "second@test.com" },
+        ],
+      },
+    }));
+
+    const attendances = await prisma.attendance.findMany({
+      where: { activityId: activity.id },
+      orderBy: { importOrder: "asc" },
+    });
+
+    expect(attendances[0].importOrder).toBe(0);
+    expect(attendances[0].firstName).toBe("First");
+    expect(attendances[1].importOrder).toBe(1);
+    expect(attendances[1].firstName).toBe("Second");
+  });
+
   it("should return 401 when not authenticated", async () => {
     // auth mock returns null by default
     const req = createRequest("POST", "/api/import/save", {

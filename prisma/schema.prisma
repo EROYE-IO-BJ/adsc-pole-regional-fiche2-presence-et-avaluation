@@ -140,6 +140,7 @@ model Attendance {
   phone        String?
   organization String?
   signature    String?  @db.Text
+  importOrder  Int?
   activityId   String
   sessionId    String
   createdAt    DateTime @default(now())

@@ -49,7 +49,7 @@ export async function GET(
       activityId,
       ...(sessionId && { sessionId }),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ importOrder: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
     include: {
       session: { select: { id: true, title: true, date: true } },
     },

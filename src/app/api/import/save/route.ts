@@ -66,13 +66,20 @@ export async function POST(request: NextRequest) {
       where: { activityId, sessionId: resolvedSessionId },
     });
 
+    // Determine the starting importOrder (after any existing attendances)
+    const maxOrder = await prisma.attendance.aggregate({
+      where: { activityId, sessionId: resolvedSessionId },
+      _max: { importOrder: true },
+    });
+    const startOrder = (maxOrder._max.importOrder ?? -1) + 1;
+
     const data = participants.map((p: {
       firstName: string;
       lastName: string;
       email: string;
       phone?: string | null;
       organization?: string | null;
-    }) => ({
+    }, index: number) => ({
       activityId,
       sessionId: resolvedSessionId,
       firstName: p.firstName.trim(),
@@ -80,6 +87,7 @@ export async function POST(request: NextRequest) {
       email: p.email.trim().toLowerCase(),
       phone: p.phone?.trim() || null,
       organization: p.organization?.trim() || null,
+      importOrder: startOrder + index,
     }));
 
     await prisma.attendance.createMany({
