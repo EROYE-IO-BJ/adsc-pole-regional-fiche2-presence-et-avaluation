@@ -22,7 +22,7 @@ async function main() {
   // Get all activities
   const activities = await prisma.activity.findMany({
     include: {
-      sessions: { orderBy: { date: "asc" } },
+      sessions: { orderBy: { startDate: "asc" } },
     },
   });
 
@@ -40,7 +40,7 @@ async function main() {
       defaultSession = await prisma.activitySession.create({
         data: {
           title: activity.type === "SERVICE" ? null : "Séance 1",
-          date: activity.date,
+          startDate: activity.startDate,
           location: activity.location,
           intervenantId: activity.intervenantId,
           activityId: activity.id,

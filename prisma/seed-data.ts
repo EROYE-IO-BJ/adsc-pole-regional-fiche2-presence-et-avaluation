@@ -464,11 +464,15 @@ async function main() {
 
       const programId = def.programName ? programs[def.programName]?.id : undefined;
 
+      const sessionCount = def.type === "FORMATION" && def.sessionsCount ? def.sessionsCount : 1;
+      const activityEndDate = new Date(activityDate.getTime() + (sessionCount - 1) * 7 * 86400000);
+
       const activity = await prisma.activity.create({
         data: {
           title: def.title,
           description: def.description,
-          date: activityDate,
+          startDate: activityDate,
+          endDate: activityEndDate,
           location: def.location,
           status,
           type: def.type,
@@ -489,7 +493,7 @@ async function main() {
           const session = await prisma.activitySession.create({
             data: {
               title: `Séance ${s + 1}`,
-              date: sessionDate,
+              startDate: sessionDate,
               location: def.location,
               intervenantId: intervenant.id,
               activityId: activity.id,
@@ -525,7 +529,7 @@ async function main() {
               organization: participant.org,
               activityId: activity.id,
               sessionId: session.id,
-              createdAt: session.date,
+              createdAt: session.startDate,
             },
           });
           totalAttendances++;
@@ -545,7 +549,7 @@ async function main() {
                 participantEmail: participant.email,
                 activityId: activity.id,
                 sessionId: session.id,
-                createdAt: new Date(session.date.getTime() + randomInt(1, 48) * 3600000),
+                createdAt: new Date(session.startDate.getTime() + randomInt(1, 48) * 3600000),
               },
             });
             totalFeedbacks++;
@@ -556,7 +560,7 @@ async function main() {
         const defaultSession = await prisma.activitySession.create({
           data: {
             title: null,
-            date: activityDate,
+            startDate: activityDate,
             location: def.location,
             intervenantId: intervenant.id,
             activityId: activity.id,

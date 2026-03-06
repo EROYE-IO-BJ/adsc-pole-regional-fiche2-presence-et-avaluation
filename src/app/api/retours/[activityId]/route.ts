@@ -51,7 +51,7 @@ export async function GET(
     where: feedbackWhere,
     orderBy: { createdAt: "desc" },
     include: {
-      session: { select: { id: true, title: true, date: true } },
+      session: { select: { id: true, title: true, startDate: true } },
     },
   });
 

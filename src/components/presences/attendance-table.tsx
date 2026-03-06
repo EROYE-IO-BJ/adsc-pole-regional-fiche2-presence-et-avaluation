@@ -10,7 +10,9 @@ import { PdfImportDialog } from "@/components/import/pdf-import-dialog";
 interface SessionInfo {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 interface Attendance {
@@ -29,7 +31,9 @@ interface Attendance {
 interface SessionData {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
+  startTime?: string | null;
+  endTime?: string | null;
   accessToken: string;
   _count: { attendances: number; feedbacks: number };
   [key: string]: any;
@@ -80,7 +84,7 @@ export function AttendanceTable({ attendances, activityId, canImport, sessions, 
   }
 
   function sessionLabel(s: SessionData) {
-    return s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
+    return s.title || `Séance du ${new Date(s.startDate).toLocaleDateString("fr-FR")}`;
   }
 
   return (
@@ -217,7 +221,7 @@ export function AttendanceTable({ attendances, activityId, canImport, sessions, 
                       <td className="py-3 hidden lg:table-cell text-muted-foreground text-xs">
                         {attendance.session?.title ||
                           (attendance.session
-                            ? new Date(attendance.session.date).toLocaleDateString("fr-FR")
+                            ? new Date(attendance.session.startDate).toLocaleDateString("fr-FR")
                             : "-")}
                       </td>
                     )}

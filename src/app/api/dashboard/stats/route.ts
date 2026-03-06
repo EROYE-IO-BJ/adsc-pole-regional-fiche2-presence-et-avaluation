@@ -90,7 +90,7 @@ async function getMonthlyTrends(activityWhere: any) {
     where: activityWhere,
     select: {
       id: true,
-      date: true,
+      startDate: true,
     },
   });
 

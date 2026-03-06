@@ -80,7 +80,12 @@ export async function PUT(
     where: { id },
     data: {
       ...(validation.data.title !== undefined && { title: validation.data.title || null }),
-      ...(validation.data.date && { date: new Date(validation.data.date) }),
+      ...(validation.data.startDate && { startDate: new Date(validation.data.startDate) }),
+      ...(validation.data.endDate !== undefined && {
+        endDate: validation.data.endDate ? new Date(validation.data.endDate) : null,
+      }),
+      ...(validation.data.startTime !== undefined && { startTime: validation.data.startTime || null }),
+      ...(validation.data.endTime !== undefined && { endTime: validation.data.endTime || null }),
       ...(validation.data.location !== undefined && { location: validation.data.location || null }),
       ...(validation.data.intervenantId !== undefined && {
         intervenantId: validation.data.intervenantId || null,

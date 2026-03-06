@@ -11,6 +11,7 @@ import { AttendanceTable } from "@/components/presences/attendance-table";
 import { FeedbackList } from "@/components/retours/feedback-list";
 import { KpiStats } from "@/components/activites/kpi-stats";
 import { Role } from "@prisma/client";
+import { formatSessionDateTime } from "@/lib/date-utils";
 
 export default async function SessionDetailPage({
   params,
@@ -43,11 +44,11 @@ export default async function SessionDetailPage({
       intervenant: { select: { name: true } },
       attendances: {
         orderBy: { createdAt: "desc" },
-        include: { session: { select: { id: true, title: true, date: true } } },
+        include: { session: { select: { id: true, title: true, startDate: true, startTime: true, endTime: true } } },
       },
       feedbacks: {
         orderBy: { createdAt: "desc" },
-        include: { session: { select: { id: true, title: true, date: true } } },
+        include: { session: { select: { id: true, title: true, startDate: true, startTime: true, endTime: true } } },
       },
       _count: { select: { attendances: true, feedbacks: true } },
     },
@@ -105,7 +106,7 @@ export default async function SessionDetailPage({
       : null;
 
   const canEdit = userRole === Role.ADMIN || userRole === Role.RESPONSABLE_SERVICE;
-  const sessionTitle = session.title || `Séance du ${new Date(session.date).toLocaleDateString("fr-FR")}`;
+  const sessionTitle = session.title || `Séance du ${new Date(session.startDate).toLocaleDateString("fr-FR")}`;
 
   return (
     <div className="space-y-6">
@@ -124,13 +125,7 @@ export default async function SessionDetailPage({
             <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-3.5 w-3.5" />
-                {new Date(session.date).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatSessionDateTime(session.startDate, session.startTime, session.endTime)}
               </span>
               {session.location && (
                 <span className="flex items-center gap-1">

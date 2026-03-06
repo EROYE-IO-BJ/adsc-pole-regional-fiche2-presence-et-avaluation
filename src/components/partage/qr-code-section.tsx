@@ -11,7 +11,9 @@ import { toast } from "sonner";
 interface SessionInfo {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
+  startTime?: string | null;
+  endTime?: string | null;
   accessToken: string;
   isDefault: boolean;
 }
@@ -92,13 +94,13 @@ export function QRCodeSection({ accessToken, activityTitle, sessions }: QRCodeSe
           <div className="grid sm:grid-cols-2 gap-4">
             {sessions.map((s) => {
               const sessionUrl = `${baseUrl}/p/${s.accessToken}`;
-              const label = s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
+              const label = s.title || `Séance du ${new Date(s.startDate).toLocaleDateString("fr-FR")}`;
               return (
                 <Card key={s.id}>
                   <CardHeader>
                     <CardTitle className="text-base">{label}</CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(s.date).toLocaleDateString("fr-FR", {
+                      {new Date(s.startDate).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "long",
                         year: "numeric",

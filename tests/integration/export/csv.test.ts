@@ -106,7 +106,7 @@ describe("GET /api/activites/[id]/export", () => {
     const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
 
     const session2 = await prisma.activitySession.create({
-      data: { activityId: activity.id, date: new Date(), title: "Séance 2" },
+      data: { activityId: activity.id, startDate: new Date(), title: "Séance 2" },
     });
 
     await prisma.attendance.createMany({

@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
           select: { id: true, title: true, type: true },
         },
         session: {
-          select: { id: true, title: true, date: true },
+          select: { id: true, title: true, startDate: true },
         },
       },
       orderBy: { createdAt: "desc" },

@@ -9,7 +9,9 @@ import { Download, Star, ThumbsUp, CheckCircle } from "lucide-react";
 interface SessionInfo {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 interface Feedback {
@@ -34,7 +36,9 @@ interface Feedback {
 interface SessionData {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
+  startTime?: string | null;
+  endTime?: string | null;
   accessToken: string;
   _count: { attendances: number; feedbacks: number };
   [key: string]: any;
@@ -131,7 +135,7 @@ export function FeedbackList({ feedbacks, stats: initialStats, activityId, activ
   }
 
   function sessionLabel(s: SessionData) {
-    return s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
+    return s.title || `Séance du ${new Date(s.startDate).toLocaleDateString("fr-FR")}`;
   }
 
   return (

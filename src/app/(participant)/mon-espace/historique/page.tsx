@@ -11,7 +11,7 @@ type Attendance = {
   activity: {
     id: string;
     title: string;
-    date: string;
+    startDate: string;
     location: string | null;
     service: { name: string };
   };
@@ -24,7 +24,7 @@ type FeedbackItem = {
   activity: {
     id: string;
     title: string;
-    date: string;
+    startDate: string;
     service: { name: string };
   };
 };
@@ -89,7 +89,7 @@ export default function ParticipantHistoryPage() {
                         <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <CalendarDays className="h-3.5 w-3.5" />
-                            {new Date(a.activity.date).toLocaleDateString("fr-FR", {
+                            {new Date(a.activity.startDate).toLocaleDateString("fr-FR", {
                               day: "numeric",
                               month: "long",
                               year: "numeric",
@@ -130,7 +130,7 @@ export default function ParticipantHistoryPage() {
                       <div>
                         <h3 className="font-medium">{f.activity.title}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(f.activity.date).toLocaleDateString("fr-FR", {
+                          {new Date(f.activity.startDate).toLocaleDateString("fr-FR", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",

@@ -20,7 +20,7 @@ describe("POST /api/sessions", () => {
     const req = createRequest("POST", "/api/sessions", {
       body: {
         activityId: activity.id,
-        date: "2025-07-01",
+        startDate: "2025-07-01",
         title: "Session 2",
       },
     });
@@ -37,7 +37,7 @@ describe("POST /api/sessions", () => {
     const req = createRequest("POST", "/api/sessions", {
       body: {
         activityId: activity.id,
-        date: "2025-07-15",
+        startDate: "2025-07-15",
         title: "Séance 2",
       },
     });
@@ -71,7 +71,7 @@ describe("DELETE /api/sessions/[id]", () => {
     const session2 = await prisma.activitySession.create({
       data: {
         activityId: activity.id,
-        date: new Date("2025-07-15"),
+        startDate: new Date("2025-07-15"),
         title: "Séance 2",
       },
     });

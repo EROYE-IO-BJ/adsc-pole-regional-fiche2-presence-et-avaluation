@@ -37,7 +37,7 @@ export async function GET() {
 
   const activities = await prisma.activity.findMany({
     where,
-    orderBy: { date: "desc" },
+    orderBy: { startDate: "desc" },
     include: {
       _count: { select: { attendances: true, feedbacks: true, registrations: true } },
       createdBy: { select: { name: true } },
@@ -103,13 +103,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const activityDate = new Date(validation.data.date);
+  const startDate = new Date(validation.data.startDate);
+  const endDate = new Date(validation.data.endDate);
 
   const activity = await prisma.activity.create({
     data: {
       title: validation.data.title,
       description: validation.data.description || null,
-      date: activityDate,
+      startDate,
+      endDate,
       location: validation.data.location || null,
       status: validation.data.status,
       type: validation.data.type,
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
       sessions: {
         create: {
           title: validation.data.type === "SERVICE" ? null : "Séance 1",
-          date: activityDate,
+          startDate,
           location: validation.data.location || null,
           intervenantId: validation.data.intervenantId || null,
           isDefault: true,

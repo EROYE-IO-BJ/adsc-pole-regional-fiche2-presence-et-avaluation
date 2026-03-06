@@ -34,11 +34,12 @@ export default async function SharePage({
       id: true,
       title: true,
       accessToken: true,
-      date: true,
+      startDate: true,
+      endDate: true,
       type: true,
       sessions: {
-        orderBy: { date: "asc" },
-        select: { id: true, title: true, date: true, accessToken: true, isDefault: true },
+        orderBy: { startDate: "asc" },
+        select: { id: true, title: true, startDate: true, startTime: true, endTime: true, accessToken: true, isDefault: true },
       },
     },
   });

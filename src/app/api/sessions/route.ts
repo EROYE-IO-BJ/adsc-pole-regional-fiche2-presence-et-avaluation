@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const sessions = await prisma.activitySession.findMany({
     where: { activityId },
-    orderBy: { date: "asc" },
+    orderBy: { startDate: "asc" },
     include: {
       intervenant: { select: { id: true, name: true } },
       _count: { select: { attendances: true, feedbacks: true } },
@@ -74,10 +74,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Validate session date is within activity date range
+  const sessionStartDate = new Date(validation.data.startDate);
+  if (sessionStartDate < activity.startDate || sessionStartDate > activity.endDate) {
+    return NextResponse.json(
+      { error: "La date de la séance doit être comprise dans la plage de dates de l'activité" },
+      { status: 400 }
+    );
+  }
+
   const session = await prisma.activitySession.create({
     data: {
       title: validation.data.title || null,
-      date: new Date(validation.data.date),
+      startDate: sessionStartDate,
+      endDate: validation.data.endDate ? new Date(validation.data.endDate) : null,
+      startTime: validation.data.startTime || null,
+      endTime: validation.data.endTime || null,
       location: validation.data.location || null,
       intervenantId: validation.data.intervenantId || activity.intervenantId || null,
       activityId: validation.data.activityId,

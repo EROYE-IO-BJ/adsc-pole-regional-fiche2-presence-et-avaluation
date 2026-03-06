@@ -23,7 +23,7 @@ export default function ParticipantDashboard() {
       fetch("/api/registrations").then((r) => r.json()),
     ]).then(([history, registrations]) => {
       const upcoming = registrations.filter(
-        (r: any) => new Date(r.activity.date) > new Date() && r.activity.status === "ACTIVE"
+        (r: any) => new Date(r.activity.startDate) > new Date() && r.activity.status === "ACTIVE"
       );
       setStats({
         attendances: history.attendances?.length || 0,

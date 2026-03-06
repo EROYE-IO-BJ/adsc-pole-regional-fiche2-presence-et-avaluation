@@ -27,7 +27,7 @@ interface FeedbackDetail {
   feedbackType: string | null;
   createdAt: string;
   activity: { id: string; title: string; type: string };
-  session: { id: string; title: string | null; date: string } | null;
+  session: { id: string; title: string | null; startDate: string } | null;
 }
 
 interface FeedbackDetailDialogProps {

@@ -27,7 +27,7 @@ interface Participant {
 interface SessionData {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
   accessToken: string;
   _count: { attendances: number; feedbacks: number };
   [key: string]: any;
@@ -192,7 +192,7 @@ export function PdfImportDialog({
   const selectedCount = participants.filter((p) => p.selected).length;
 
   function sessionLabel(s: SessionData) {
-    return s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`;
+    return s.title || `Séance du ${new Date(s.startDate).toLocaleDateString("fr-FR")}`;
   }
 
   return (

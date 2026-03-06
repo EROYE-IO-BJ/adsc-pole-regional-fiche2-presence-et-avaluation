@@ -45,7 +45,10 @@ export function SessionForm({ activityId, onCreated, onCancel }: SessionFormProp
 
     const data = {
       title: formData.get("title") as string,
-      date: formData.get("date") as string,
+      startDate: formData.get("startDate") as string,
+      endDate: (formData.get("endDate") as string) || undefined,
+      startTime: (formData.get("startTime") as string) || undefined,
+      endTime: (formData.get("endTime") as string) || undefined,
       location: formData.get("location") as string,
       intervenantId: (formData.get("intervenantId") as string) || undefined,
       activityId,
@@ -84,12 +87,16 @@ export function SessionForm({ activityId, onCreated, onCancel }: SessionFormProp
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="session-date">Date *</Label>
-          <Input id="session-date" name="date" type="datetime-local" required />
+          <Label htmlFor="session-startDate">Date de début *</Label>
+          <Input id="session-startDate" name="startDate" type="date" required />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="session-endDate">Date de fin</Label>
+          <Input id="session-endDate" name="endDate" type="date" />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="session-location">Lieu</Label>
           <Input
@@ -98,6 +105,20 @@ export function SessionForm({ activityId, onCreated, onCancel }: SessionFormProp
             placeholder="Salle A"
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="session-startTime">Heure de début</Label>
+          <Input id="session-startTime" name="startTime" type="time" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="session-endTime">Heure de fin</Label>
+          <Input id="session-endTime" name="endTime" type="time" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {intervenants.length > 0 && (
           <div className="space-y-2">
             <Label htmlFor="session-intervenant">Intervenant</Label>

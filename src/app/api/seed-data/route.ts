@@ -665,11 +665,15 @@ export async function POST(request: NextRequest) {
         const intervenantId = randomChoice(intervenants);
         const location = randomChoice(locs);
 
+        const sessionCount = isFormation ? randomInt(3, 12) : 1;
+        const activityEndDate = new Date(activityDate.getTime() + (sessionCount - 1) * 7 * 86400000);
+
         const activity = await prisma.activity.create({
           data: {
             title,
             description: `${title} — programme « ${pd.name} »`,
-            date: activityDate,
+            startDate: activityDate,
+            endDate: activityEndDate,
             location,
             status,
             type: actType,
@@ -683,15 +687,21 @@ export async function POST(request: NextRequest) {
         totalActivities++;
 
         // ── Sessions ──
-        const sessionCount = isFormation ? randomInt(3, 12) : 1;
+        const timeVariations = ["08:00", "08:30", "09:00", "09:30", "10:00"];
+        const endTimeVariations = ["16:00", "16:30", "17:00", "17:30", "18:00"];
         const sessions: { id: string; date: Date }[] = [];
 
         for (let s = 0; s < sessionCount; s++) {
           const sessionDate = new Date(activityDate.getTime() + s * 7 * 86400000);
+          const sTime = randomChoice(timeVariations);
+          const eTime = randomChoice(endTimeVariations);
           const session = await prisma.activitySession.create({
             data: {
               title: isFormation ? `Seance ${s + 1}` : null,
-              date: sessionDate,
+              startDate: sessionDate,
+              endDate: sessionDate,
+              startTime: sTime,
+              endTime: eTime,
               location,
               intervenantId,
               activityId: activity.id,

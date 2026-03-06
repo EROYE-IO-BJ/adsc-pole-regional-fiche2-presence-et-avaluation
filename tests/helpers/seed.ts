@@ -9,7 +9,8 @@ export async function createFormationActivity(
   return prisma.activity.create({
     data: {
       title: "Formation Test",
-      date: new Date("2025-06-15"),
+      startDate: new Date("2025-06-15"),
+      endDate: new Date("2025-08-15"),
       type: "FORMATION",
       status: "ACTIVE",
       serviceId,
@@ -18,7 +19,7 @@ export async function createFormationActivity(
       sessions: {
         create: {
           title: "Séance 1",
-          date: new Date("2025-06-15"),
+          startDate: new Date("2025-06-15"),
           isDefault: true,
         },
       },
@@ -36,7 +37,8 @@ export async function createServiceActivity(
   return prisma.activity.create({
     data: {
       title: "Service Test",
-      date: new Date("2025-06-15"),
+      startDate: new Date("2025-06-15"),
+      endDate: new Date("2025-06-15"),
       type: "SERVICE",
       status: "ACTIVE",
       serviceId,
@@ -45,7 +47,7 @@ export async function createServiceActivity(
       sessions: {
         create: {
           title: null,
-          date: new Date("2025-06-15"),
+          startDate: new Date("2025-06-15"),
           isDefault: true,
         },
       },

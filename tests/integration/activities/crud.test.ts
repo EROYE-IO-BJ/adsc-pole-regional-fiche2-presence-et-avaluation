@@ -25,7 +25,8 @@ describe("POST /api/activites", () => {
     const req = createRequest("POST", "/api/activites", {
       body: {
         title: "Formation IA",
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         type: "FORMATION",
         serviceId: users.service.id,
         programId: program.id,
@@ -49,7 +50,8 @@ describe("POST /api/activites", () => {
     const req = createRequest("POST", "/api/activites", {
       body: {
         title: "Accueil public",
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         type: "SERVICE",
         serviceId: users.service.id,
       },
@@ -71,7 +73,8 @@ describe("POST /api/activites", () => {
     const req = createRequest("POST", "/api/activites", {
       body: {
         title: "Formation RH",
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         type: "FORMATION",
         serviceId: users.service.id,
         programId: program.id,
@@ -89,7 +92,8 @@ describe("POST /api/activites", () => {
     const req = createRequest("POST", "/api/activites", {
       body: {
         title: "Formation Autre",
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         type: "FORMATION",
         serviceId: users.service2.id,
         programId: program2.id,
@@ -107,7 +111,8 @@ describe("POST /api/activites", () => {
     const req = createRequest("POST", "/api/activites", {
       body: {
         title: "Test",
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         serviceId: users.service.id,
       },
     });
@@ -123,7 +128,8 @@ describe("POST /api/activites", () => {
     const req = createRequest("POST", "/api/activites", {
       body: {
         title: "Test",
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         serviceId: users.service.id,
       },
     });
@@ -138,7 +144,8 @@ describe("POST /api/activites", () => {
 
     const req = createRequest("POST", "/api/activites", {
       body: {
-        date: "2025-07-01",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
         serviceId: users.service.id,
       },
     });
@@ -186,19 +193,21 @@ async function createActivities() {
   await prisma.activity.create({
     data: {
       title: "Activity Service 1",
-      date: new Date(),
+      startDate: new Date(),
+      endDate: new Date(),
       serviceId: users.service.id,
       createdById: users.admin.id,
-      sessions: { create: { date: new Date(), isDefault: true } },
+      sessions: { create: { startDate: new Date(), isDefault: true } },
     },
   });
   await prisma.activity.create({
     data: {
       title: "Activity Service 2",
-      date: new Date(),
+      startDate: new Date(),
+      endDate: new Date(),
       serviceId: users.service2.id,
       createdById: users.admin.id,
-      sessions: { create: { date: new Date(), isDefault: true } },
+      sessions: { create: { startDate: new Date(), isDefault: true } },
     },
   });
 }

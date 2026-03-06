@@ -91,7 +91,8 @@ model Activity {
   id                    String         @id @default(cuid())
   title                 String
   description           String?
-  date                  DateTime
+  startDate             DateTime
+  endDate               DateTime
   location              String?
   status                ActivityStatus @default(ACTIVE)
   type                  ActivityType   @default(FORMATION)
@@ -117,7 +118,10 @@ model Activity {
 model ActivitySession {
   id            String   @id @default(cuid())
   title         String?
-  date          DateTime
+  startDate     DateTime
+  endDate       DateTime?
+  startTime     String?
+  endTime       String?
   location      String?
   intervenantId String?
   activityId    String

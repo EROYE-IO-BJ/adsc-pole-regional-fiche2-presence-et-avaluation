@@ -51,7 +51,7 @@ export async function GET(
     },
     orderBy: [{ importOrder: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
     include: {
-      session: { select: { id: true, title: true, date: true } },
+      session: { select: { id: true, title: true, startDate: true } },
     },
   });
 

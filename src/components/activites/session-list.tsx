@@ -8,11 +8,15 @@ import { CalendarDays, MapPin, UserCheck, Users, MessageSquare, Plus, QrCode, Tr
 import { SessionForm } from "./session-form";
 import { toast } from "sonner";
 import Link from "next/link";
+import { formatSessionDateTime } from "@/lib/date-utils";
 
 interface SessionData {
   id: string;
   title: string | null;
-  date: string | Date;
+  startDate: string | Date;
+  endDate?: string | Date | null;
+  startTime?: string | null;
+  endTime?: string | null;
   location: string | null;
   accessToken: string;
   intervenant: { name: string } | null;
@@ -31,7 +35,7 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
 
   function handleSessionCreated(session: SessionData) {
     setSessions((prev) => [...prev, session].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     ));
     setShowForm(false);
     toast.success("Séance ajoutée");
@@ -96,19 +100,13 @@ export function SessionList({ sessions: initialSessions, activityId, canEdit }: 
                   >
                     <div className="flex items-center gap-2">
                       <p className="font-medium">
-                        {s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`}
+                        {s.title || `Séance du ${new Date(s.startDate).toLocaleDateString("fr-FR")}`}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        {new Date(s.date).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatSessionDateTime(s.startDate, s.startTime, s.endTime)}
                       </span>
                       {s.location && (
                         <span className="flex items-center gap-1">

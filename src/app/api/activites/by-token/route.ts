@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
         select: {
           type: true,
           sessions: {
-            orderBy: { date: "asc" as const },
-            select: { id: true, title: true, date: true, accessToken: true, isDefault: true },
+            orderBy: { startDate: "asc" as const },
+            select: { id: true, title: true, startDate: true, startTime: true, endTime: true, accessToken: true, isDefault: true },
           },
         },
       },
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
     select: {
       type: true,
       sessions: {
-        orderBy: { date: "asc" },
-        select: { id: true, title: true, date: true, accessToken: true, isDefault: true },
+        orderBy: { startDate: "asc" },
+        select: { id: true, title: true, startDate: true, startTime: true, endTime: true, accessToken: true, isDefault: true },
       },
     },
   });

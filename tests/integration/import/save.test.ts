@@ -40,7 +40,7 @@ describe("POST /api/import/save", () => {
 
     // Add a second session
     const session2 = await prisma.activitySession.create({
-      data: { activityId: activity.id, date: new Date(), title: "Séance 2" },
+      data: { activityId: activity.id, startDate: new Date(), title: "Séance 2" },
     });
 
     const req = createRequest("POST", "/api/import/save", {

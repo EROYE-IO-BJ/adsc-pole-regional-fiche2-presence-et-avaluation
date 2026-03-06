@@ -72,7 +72,8 @@ export default function NewActivityPage() {
     const data: any = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
-      date: formData.get("date") as string,
+      startDate: formData.get("startDate") as string,
+      endDate: formData.get("endDate") as string,
       location: formData.get("location") as string,
       status: formData.get("status") as string,
       type: activityType,
@@ -168,18 +169,23 @@ export default function NewActivityPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
-                <Input id="date" name="date" type="datetime-local" required />
+                <Label htmlFor="startDate">Date de début *</Label>
+                <Input id="startDate" name="startDate" type="date" required />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Lieu</Label>
-                <Input
-                  id="location"
-                  name="location"
-                  placeholder="Salle A, Bâtiment principal"
-                />
+                <Label htmlFor="endDate">Date de fin *</Label>
+                <Input id="endDate" name="endDate" type="date" required />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Lieu</Label>
+              <Input
+                id="location"
+                name="location"
+                placeholder="Salle A, Bâtiment principal"
+              />
             </div>
 
             {/* Service selector for admin and responsable */}

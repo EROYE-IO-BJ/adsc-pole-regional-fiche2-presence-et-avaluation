@@ -33,12 +33,12 @@ export async function GET(
       attendances: {
         where: sessionFilter,
         orderBy: [{ importOrder: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
-        include: { session: { select: { title: true, date: true } } },
+        include: { session: { select: { title: true, startDate: true } } },
       },
       feedbacks: {
         where: sessionFilter,
         orderBy: { createdAt: "asc" },
-        include: { session: { select: { title: true, date: true } } },
+        include: { session: { select: { title: true, startDate: true } } },
       },
     },
   });
@@ -86,7 +86,7 @@ export async function GET(
           f.satisfactionRating ?? "",
           f.informationClarity !== null ? (f.informationClarity ? "Oui" : "Non") : "",
           `"${(f.improvementSuggestion || "").replace(/"/g, '""')}"`,
-          f.session?.title || (f.session ? new Date(f.session.date).toLocaleDateString("fr-FR") : ""),
+          f.session?.title || (f.session ? new Date(f.session.startDate).toLocaleDateString("fr-FR") : ""),
           new Date(f.createdAt).toLocaleDateString("fr-FR"),
         ]);
         csvContent =
@@ -115,7 +115,7 @@ export async function GET(
           f.wouldRecommend ? "Oui" : "Non",
           `"${(f.comment || "").replace(/"/g, '""')}"`,
           `"${(f.suggestions || "").replace(/"/g, '""')}"`,
-          f.session?.title || (f.session ? new Date(f.session.date).toLocaleDateString("fr-FR") : ""),
+          f.session?.title || (f.session ? new Date(f.session.startDate).toLocaleDateString("fr-FR") : ""),
           new Date(f.createdAt).toLocaleDateString("fr-FR"),
         ]);
         csvContent =
@@ -140,7 +140,7 @@ export async function GET(
         a.email,
         a.phone || "",
         a.organization || "",
-        a.session?.title || (a.session ? new Date(a.session.date).toLocaleDateString("fr-FR") : ""),
+        a.session?.title || (a.session ? new Date(a.session.startDate).toLocaleDateString("fr-FR") : ""),
         new Date(a.createdAt).toLocaleDateString("fr-FR"),
       ]);
       csvContent =
@@ -164,15 +164,15 @@ export async function GET(
     if (sessionId) {
       const session = await prisma.activitySession.findUnique({
         where: { id: sessionId },
-        select: { title: true, date: true },
+        select: { title: true, startDate: true },
       });
-      sessionTitle = session?.title || (session ? new Date(session.date).toLocaleDateString("fr-FR") : null);
+      sessionTitle = session?.title || (session ? new Date(session.startDate).toLocaleDateString("fr-FR") : null);
     }
 
     const pdfBytes = await generateAttendancePdf(
       {
         title: activity.title,
-        date: activity.date,
+        date: activity.startDate,
         location: activity.location,
         serviceName: activity.service.name,
         programName: activity.program?.name || null,
@@ -185,7 +185,7 @@ export async function GET(
         email: a.email,
         organization: a.organization,
         signature: a.signature,
-        sessionTitle: a.session?.title || (a.session ? new Date(a.session.date).toLocaleDateString("fr-FR") : undefined),
+        sessionTitle: a.session?.title || (a.session ? new Date(a.session.startDate).toLocaleDateString("fr-FR") : undefined),
         createdAt: a.createdAt,
       }))
     );

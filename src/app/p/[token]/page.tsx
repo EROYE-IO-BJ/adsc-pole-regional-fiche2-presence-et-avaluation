@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ClipboardList, MessageSquare, CalendarDays, MapPin } from "lucide-react";
+import { formatDateRange, formatSessionDateTime } from "@/lib/date-utils";
 
 export default async function PublicLandingPage({
   params,
@@ -15,7 +16,7 @@ export default async function PublicLandingPage({
     where: { accessToken: token },
     include: {
       activity: {
-        select: { id: true, title: true, date: true, location: true, status: true, type: true, requiresRegistration: true },
+        select: { id: true, title: true, startDate: true, endDate: true, location: true, status: true, type: true, requiresRegistration: true },
       },
     },
   });
@@ -25,7 +26,7 @@ export default async function PublicLandingPage({
     ? sessionRecord.activity
     : await prisma.activity.findUnique({
         where: { accessToken: token },
-        select: { id: true, title: true, date: true, location: true, status: true, type: true, requiresRegistration: true },
+        select: { id: true, title: true, startDate: true, endDate: true, location: true, status: true, type: true, requiresRegistration: true },
       });
 
   if (!activity) {
@@ -52,7 +53,7 @@ export default async function PublicLandingPage({
   if (isFormation && !isSession) {
     const sessions = await prisma.activitySession.findMany({
       where: { activityId: activity.id },
-      orderBy: { date: "asc" },
+      orderBy: { startDate: "asc" },
     });
 
     if (sessions.length > 1) {
@@ -76,16 +77,10 @@ export default async function PublicLandingPage({
                   </div>
                   <div>
                     <h2 className="font-semibold text-gray-900">
-                      {s.title || `Séance du ${new Date(s.date).toLocaleDateString("fr-FR")}`}
+                      {s.title || `Séance du ${new Date(s.startDate).toLocaleDateString("fr-FR")}`}
                     </h2>
                     <p className="text-sm text-gray-500">
-                      {new Date(s.date).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatSessionDateTime(s.startDate, s.startTime, s.endTime)}
                     </p>
                     {s.location && (
                       <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
@@ -123,10 +118,9 @@ export default async function PublicLandingPage({
 
   // Default: show presence + feedback links
   const displayTitle = isSession
-    ? `${activity.title} - ${sessionRecord.title || `Séance du ${new Date(sessionRecord.date).toLocaleDateString("fr-FR")}`}`
+    ? `${activity.title} - ${sessionRecord.title || `Séance du ${new Date(sessionRecord.startDate).toLocaleDateString("fr-FR")}`}`
     : activity.title;
 
-  const displayDate = isSession ? sessionRecord.date : activity.date;
   const displayLocation = isSession ? sessionRecord.location || activity.location : activity.location;
 
   return (
@@ -136,11 +130,9 @@ export default async function PublicLandingPage({
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold text-white">{displayTitle}</h1>
           <p className="text-white/80">
-            {new Date(displayDate).toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+            {isSession
+              ? formatSessionDateTime(sessionRecord.startDate, sessionRecord.startTime, sessionRecord.endTime)
+              : formatDateRange(activity.startDate, activity.endDate)}
           </p>
           {displayLocation && (
             <p className="text-sm text-white/60">{displayLocation}</p>

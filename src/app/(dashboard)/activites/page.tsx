@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, CalendarDays, Users, MessageSquare, MapPin } from "lucide-react";
 import { Role } from "@prisma/client";
+import { formatDateRange } from "@/lib/date-utils";
 
 const statusLabels: Record<string, { label: string; variant: "default" | "success" | "warning" | "secondary" }> = {
   DRAFT: { label: "Brouillon", variant: "secondary" },
@@ -36,7 +37,7 @@ export default async function ActivitiesPage() {
 
   const activities = await prisma.activity.findMany({
     where,
-    orderBy: { date: "desc" },
+    orderBy: { startDate: "desc" },
     include: {
       _count: { select: { attendances: true, feedbacks: true } },
       createdBy: { select: { name: true } },
@@ -101,11 +102,7 @@ export default async function ActivitiesPage() {
                         <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <CalendarDays className="h-3.5 w-3.5" />
-                            {new Date(activity.date).toLocaleDateString("fr-FR", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })}
+                            {formatDateRange(activity.startDate, activity.endDate)}
                           </span>
                           {activity.location && (
                             <span className="flex items-center gap-1">

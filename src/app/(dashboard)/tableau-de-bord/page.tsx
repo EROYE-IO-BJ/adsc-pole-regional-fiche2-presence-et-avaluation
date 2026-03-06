@@ -46,7 +46,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       }),
       prisma.activity.findMany({
         where: activityWhere,
-        orderBy: { date: "desc" },
+        orderBy: { startDate: "desc" },
         take: 5,
         include: {
           _count: { select: { attendances: true, feedbacks: true } },
@@ -185,7 +185,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   <div>
                     <p className="font-medium">{activity.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(activity.date).toLocaleDateString("fr-FR", {
+                      {new Date(activity.startDate).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "long",
                         year: "numeric",

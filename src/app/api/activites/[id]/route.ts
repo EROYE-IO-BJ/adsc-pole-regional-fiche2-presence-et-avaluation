@@ -112,7 +112,8 @@ export async function PUT(
       ...(validation.data.description !== undefined && {
         description: validation.data.description || null,
       }),
-      ...(validation.data.date && { date: new Date(validation.data.date) }),
+      ...(validation.data.startDate && { startDate: new Date(validation.data.startDate) }),
+      ...(validation.data.endDate && { endDate: new Date(validation.data.endDate) }),
       ...(validation.data.location !== undefined && {
         location: validation.data.location || null,
       }),

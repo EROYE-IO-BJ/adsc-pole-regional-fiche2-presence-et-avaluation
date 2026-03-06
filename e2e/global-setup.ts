@@ -53,15 +53,16 @@ export default async function globalSetup() {
     const formation = await prisma.activity.create({
       data: {
         title: "Formation E2E Test",
-        date: new Date("2025-09-01"),
+        startDate: new Date("2025-09-01"),
+        endDate: new Date("2025-09-15"),
         type: "FORMATION",
         status: "ACTIVE",
         serviceId: service.id,
         createdById: admin.id,
         sessions: {
           create: [
-            { title: "Séance 1", date: new Date("2025-09-01"), isDefault: true },
-            { title: "Séance 2", date: new Date("2025-09-15") },
+            { title: "Séance 1", startDate: new Date("2025-09-01"), isDefault: true },
+            { title: "Séance 2", startDate: new Date("2025-09-15") },
           ],
         },
       },
@@ -72,13 +73,14 @@ export default async function globalSetup() {
     await prisma.activity.create({
       data: {
         title: "Service E2E Test",
-        date: new Date("2025-09-01"),
+        startDate: new Date("2025-09-01"),
+        endDate: new Date("2025-09-01"),
         type: "SERVICE",
         status: "ACTIVE",
         serviceId: service.id,
         createdById: admin.id,
         sessions: {
-          create: { title: null, date: new Date("2025-09-01"), isDefault: true },
+          create: { title: null, startDate: new Date("2025-09-01"), isDefault: true },
         },
       },
     });

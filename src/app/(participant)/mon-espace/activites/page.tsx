@@ -16,7 +16,8 @@ type Activity = {
   id: string;
   title: string;
   description: string | null;
-  date: string;
+  startDate: string;
+  endDate: string;
   location: string | null;
   status: string;
   requiresRegistration: boolean;
@@ -126,12 +127,10 @@ export default function ParticipantActivitiesPage() {
                     <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        {new Date(activity.date).toLocaleDateString("fr-FR", {
+                        {new Date(activity.startDate).toLocaleDateString("fr-FR", {
                           day: "numeric",
                           month: "long",
                           year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
                         })}
                       </span>
                       {activity.location && (
