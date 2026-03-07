@@ -18,6 +18,8 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { RecurrenceConfigComponent } from "@/components/activites/recurrence-config";
+import type { DaySchedule } from "@/lib/recurrence";
 
 type Intervenant = {
   id: string;
@@ -46,7 +48,11 @@ export default function NewActivityPage() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [requiresRegistration, setRequiresRegistration] = useState(false);
   const [activityType, setActivityType] = useState<"FORMATION" | "SERVICE">("FORMATION");
+  const [sessionFrequency, setSessionFrequency] = useState<"UNIQUE" | "DAILY" | "WEEKLY" | "MONTHLY" | "CONFIGURABLE">("UNIQUE");
+  const [daySchedule, setDaySchedule] = useState<DaySchedule>({});
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const isAdmin = session?.user?.role === "ADMIN";
   const isResponsable = session?.user?.role === "RESPONSABLE_SERVICE";
 
@@ -79,7 +85,15 @@ export default function NewActivityPage() {
       type: activityType,
       requiresRegistration,
       intervenantId: (formData.get("intervenantId") as string) || undefined,
+      sessionFrequency: activityType === "SERVICE" ? "UNIQUE" : sessionFrequency,
     };
+
+    if (["DAILY", "WEEKLY", "MONTHLY"].includes(sessionFrequency) && activityType !== "SERVICE") {
+      data.recurrenceConfig = {
+        mode: sessionFrequency,
+        daySchedule,
+      };
+    }
 
     if (isAdmin || isResponsable) {
       data.serviceId = selectedServiceId || (formData.get("serviceId") as string);
@@ -170,14 +184,40 @@ export default function NewActivityPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Date de début *</Label>
-                <Input id="startDate" name="startDate" type="date" required />
+                <Input
+                  id="startDate"
+                  name="startDate"
+                  type="date"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="endDate">Date de fin *</Label>
-                <Input id="endDate" name="endDate" type="date" required />
+                <Input
+                  id="endDate"
+                  name="endDate"
+                  type="date"
+                  required
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
               </div>
             </div>
+
+            {/* Recurrence config — only for FORMATION */}
+            {activityType === "FORMATION" && (
+              <RecurrenceConfigComponent
+                frequency={sessionFrequency}
+                onFrequencyChange={setSessionFrequency}
+                daySchedule={daySchedule}
+                onDayScheduleChange={setDaySchedule}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="location">Lieu</Label>

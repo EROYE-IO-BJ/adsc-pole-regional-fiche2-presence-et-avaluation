@@ -25,6 +25,14 @@ enum ActivityType {
   SERVICE
 }
 
+enum SessionFrequency {
+  UNIQUE
+  DAILY
+  WEEKLY
+  MONTHLY
+  CONFIGURABLE
+}
+
 model Organization {
   id          String       @id @default(cuid())
   name        String       @unique
@@ -133,6 +141,8 @@ model Activity {
   createdById           String
   intervenantId         String?
   programId             String
+  sessionFrequency      SessionFrequency @default(UNIQUE)
+  recurrenceConfig      Json?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 

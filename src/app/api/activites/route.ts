@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole, getUserServiceIds, userCanAccessService, handleAuthError } from "@/lib/authorization";
 import { createActivitySchema } from "@/lib/validations/activity";
+import { generateSessions } from "@/lib/recurrence";
 import { Role } from "@prisma/client";
+import type { RecurrenceConfig } from "@/lib/recurrence";
 
 // GET /api/activites - List activities based on user role
 export async function GET() {
@@ -89,6 +91,42 @@ export async function POST(request: NextRequest) {
 
   const startDate = new Date(validation.data.startDate);
   const endDate = new Date(validation.data.endDate);
+  const { sessionFrequency, recurrenceConfig } = validation.data;
+
+  // Build session creation data based on frequency
+  let sessionsData: any[];
+
+  if (["DAILY", "WEEKLY", "MONTHLY"].includes(sessionFrequency) && recurrenceConfig) {
+    const generated = generateSessions(startDate, endDate, recurrenceConfig as RecurrenceConfig);
+
+    if (generated.length === 0) {
+      return NextResponse.json(
+        { error: "Aucune séance générée pour cette configuration de récurrence" },
+        { status: 400 }
+      );
+    }
+
+    sessionsData = generated.map((s, i) => ({
+      title: s.title,
+      startDate: s.date,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      location: validation.data.location || null,
+      intervenantId: validation.data.intervenantId || null,
+      isDefault: i === 0,
+    }));
+  } else {
+    // UNIQUE or CONFIGURABLE → 1 session
+    sessionsData = [
+      {
+        title: validation.data.type === "SERVICE" ? null : "Séance 1",
+        startDate,
+        location: validation.data.location || null,
+        intervenantId: validation.data.intervenantId || null,
+        isDefault: true,
+      },
+    ];
+  }
 
   const activity = await prisma.activity.create({
     data: {
@@ -104,14 +142,10 @@ export async function POST(request: NextRequest) {
       programId: validation.data.programId,
       serviceId: serviceId || null,
       createdById: user.id,
+      sessionFrequency,
+      recurrenceConfig: recurrenceConfig ?? undefined,
       sessions: {
-        create: {
-          title: validation.data.type === "SERVICE" ? null : "Séance 1",
-          startDate,
-          location: validation.data.location || null,
-          intervenantId: validation.data.intervenantId || null,
-          isDefault: true,
-        },
+        create: sessionsData,
       },
     },
     include: {
