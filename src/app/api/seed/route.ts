@@ -13,6 +13,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Create organization + department
+    const org = await prisma.organization.upsert({
+      where: { slug: "seme-city" },
+      update: {},
+      create: { name: "Seme City", slug: "seme-city", description: "Seme City - Cite de l'Innovation et du Savoir" },
+    });
+    const dept = await prisma.department.upsert({
+      where: { slug: "ima" },
+      update: {},
+      create: { name: "Institut des Metiers d'Avenir (IMA)", slug: "ima", organizationId: org.id },
+    });
+
     // Create services
     const services = await Promise.all([
       prisma.service.upsert({
@@ -22,6 +34,7 @@ export async function POST(request: NextRequest) {
           name: "IMA Lingua",
           slug: "ima-lingua",
           description: "Institut des Métiers d'Avenir - Lingua",
+          departmentId: dept.id,
         },
       }),
       prisma.service.upsert({
@@ -31,6 +44,7 @@ export async function POST(request: NextRequest) {
           name: "Career Center",
           slug: "career-center",
           description: "Centre de carrière et d'orientation professionnelle",
+          departmentId: dept.id,
         },
       }),
       prisma.service.upsert({
@@ -41,6 +55,7 @@ export async function POST(request: NextRequest) {
           slug: "recrutement-mobilite",
           description:
             "Service de recrutement, accueil et mobilité internationale",
+          departmentId: dept.id,
         },
       }),
     ]);

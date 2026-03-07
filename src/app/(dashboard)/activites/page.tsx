@@ -110,7 +110,7 @@ export default async function ActivitiesPage() {
                               {activity.location}
                             </span>
                           )}
-                          <span className="text-xs">{activity.service.name}</span>
+                          {activity.service && <span className="text-xs">{activity.service.name}</span>}
                         </div>
                       </div>
                       <div className="flex gap-4 text-sm">

@@ -95,12 +95,11 @@ export async function PUT(
     );
   }
 
-  // Check programId required for FORMATION
-  const finalType = validation.data.type || existing.type;
+  // Check programId required
   const finalProgramId = validation.data.programId !== undefined ? validation.data.programId : existing.programId;
-  if (finalType === "FORMATION" && !finalProgramId) {
+  if (!finalProgramId) {
     return NextResponse.json(
-      { error: "Le programme est requis pour une formation" },
+      { error: "Le programme est requis" },
       { status: 400 }
     );
   }
@@ -126,7 +125,7 @@ export async function PUT(
       }),
       ...(validation.data.type && { type: validation.data.type }),
       ...(validation.data.programId !== undefined && {
-        programId: validation.data.programId || null,
+        programId: validation.data.programId,
       }),
     },
   });

@@ -28,12 +28,20 @@ export function mockAuthUser(user: MockUser | null) {
 export async function createTestUsers(prisma: PrismaClient) {
   const password = await bcrypt.hash("password123", 12);
 
+  const org = await prisma.organization.create({
+    data: { name: "Org Test", slug: "org-test" },
+  });
+
+  const department = await prisma.department.create({
+    data: { name: "Département Test", slug: "dept-test", organizationId: org.id },
+  });
+
   const service = await prisma.service.create({
-    data: { name: "Service Test", slug: "service-test" },
+    data: { name: "Service Test", slug: "service-test", departmentId: department.id },
   });
 
   const service2 = await prisma.service.create({
-    data: { name: "Service Autre", slug: "service-autre" },
+    data: { name: "Service Autre", slug: "service-autre", departmentId: department.id },
   });
 
   const admin = await prisma.user.create({
@@ -81,5 +89,13 @@ export async function createTestUsers(prisma: PrismaClient) {
     },
   });
 
-  return { admin, responsable, intervenant, participant, service, service2 };
+  const program = await prisma.program.create({
+    data: { name: "Programme Test", departmentId: department.id, serviceId: service.id },
+  });
+
+  const program2 = await prisma.program.create({
+    data: { name: "Programme Autre", departmentId: department.id, serviceId: service2.id },
+  });
+
+  return { admin, responsable, intervenant, participant, service, service2, department, program, program2 };
 }

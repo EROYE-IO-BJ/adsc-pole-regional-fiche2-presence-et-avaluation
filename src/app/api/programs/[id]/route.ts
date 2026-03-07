@@ -22,6 +22,7 @@ export async function GET(
   const program = await prisma.program.findUnique({
     where: { id },
     include: {
+      department: { select: { id: true, name: true } },
       service: { select: { id: true, name: true } },
       _count: { select: { activities: true } },
     },
@@ -85,7 +86,8 @@ export async function PUT(
       ...(validation.data.description !== undefined && {
         description: validation.data.description || null,
       }),
-      ...(validation.data.serviceId && { serviceId: validation.data.serviceId }),
+      ...(validation.data.departmentId && { departmentId: validation.data.departmentId }),
+      ...(validation.data.serviceId !== undefined && { serviceId: validation.data.serviceId || null }),
     },
     include: {
       service: { select: { name: true } },

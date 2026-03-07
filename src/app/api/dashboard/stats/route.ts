@@ -249,7 +249,7 @@ async function getTopPrograms(activityWhere: any) {
       return {
         id: p.id,
         name: p.name,
-        serviceName: p.service.name,
+        serviceName: p.service?.name || "",
         participants,
         avgRating,
       };
@@ -330,7 +330,7 @@ async function getTopActivities(activityWhere: any) {
       return {
         id: a.id,
         title: a.title,
-        serviceName: a.service.name,
+        serviceName: a.service?.name || "",
         type: a.type as "FORMATION" | "SERVICE",
         avgRating,
         feedbacksCount: a._count.feedbacks,

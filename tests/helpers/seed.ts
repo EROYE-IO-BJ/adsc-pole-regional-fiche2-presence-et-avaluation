@@ -4,6 +4,7 @@ export async function createFormationActivity(
   prisma: PrismaClient,
   serviceId: string,
   userId: string,
+  programId: string,
   overrides?: Record<string, unknown>
 ) {
   return prisma.activity.create({
@@ -14,6 +15,7 @@ export async function createFormationActivity(
       type: "FORMATION",
       status: "ACTIVE",
       serviceId,
+      programId,
       createdById: userId,
       ...overrides,
       sessions: {
@@ -32,6 +34,7 @@ export async function createServiceActivity(
   prisma: PrismaClient,
   serviceId: string,
   userId: string,
+  programId: string,
   overrides?: Record<string, unknown>
 ) {
   return prisma.activity.create({
@@ -42,6 +45,7 @@ export async function createServiceActivity(
       type: "SERVICE",
       status: "ACTIVE",
       serviceId,
+      programId,
       createdById: userId,
       ...overrides,
       sessions: {

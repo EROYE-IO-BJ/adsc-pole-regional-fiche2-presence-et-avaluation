@@ -10,17 +10,13 @@ const activityBaseSchema = z.object({
   type: z.enum(["FORMATION", "SERVICE"]).default("FORMATION"),
   requiresRegistration: z.boolean().default(false),
   intervenantId: z.string().optional(),
-  programId: z.string().optional(),
+  programId: z.string().min(1, "Le programme est requis"),
 });
 
 export const createActivitySchema = activityBaseSchema
   .refine(
     (data) => new Date(data.endDate) >= new Date(data.startDate),
     { message: "La date de fin doit être après la date de début", path: ["endDate"] }
-  )
-  .refine(
-    (data) => data.type !== "FORMATION" || (data.programId && data.programId.length > 0),
-    { message: "Le programme est requis pour une formation", path: ["programId"] }
   );
 
 export const updateActivitySchema = activityBaseSchema.partial().refine(

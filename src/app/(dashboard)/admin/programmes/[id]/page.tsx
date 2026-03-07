@@ -27,34 +27,52 @@ type ProgramDetail = {
   id: string;
   name: string;
   description: string | null;
-  serviceId: string;
-  service: { id: string; name: string };
+  departmentId: string;
+  serviceId: string | null;
+  department: { id: string; name: string };
+  service: { id: string; name: string } | null;
   _count: { activities: number };
+};
+
+type Department = {
+  id: string;
+  name: string;
+  organization: { name: string };
 };
 
 type Service = {
   id: string;
   name: string;
+  departmentId: string;
 };
 
 export default function ProgramDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [program, setProgram] = useState<ProgramDetail | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/programs/${params.id}`).then((r) => r.json()),
-      fetch("/api/services").then((r) => r.json()),
-    ]).then(([programData, servicesData]) => {
+      fetch("/api/departments").then((r) => r.json()).catch(() => []),
+      fetch("/api/services").then((r) => r.json()).catch(() => []),
+    ]).then(([programData, departmentsData, servicesData]) => {
       setProgram(programData);
+      setDepartments(departmentsData);
       setServices(servicesData);
+      setSelectedDepartmentId(programData.departmentId || "");
       setLoading(false);
     });
   }, [params.id]);
+
+  const filteredServices = selectedDepartmentId
+    ? services.filter((s) => s.departmentId === selectedDepartmentId)
+    : services;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -65,7 +83,8 @@ export default function ProgramDetailPage() {
     const data = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
-      serviceId: formData.get("serviceId") as string,
+      departmentId: selectedDepartmentId,
+      serviceId: (formData.get("serviceId") as string) || undefined,
     };
 
     const res = await fetch(`/api/programs/${params.id}`, {
@@ -153,13 +172,33 @@ export default function ProgramDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="serviceId">Service</Label>
-              <Select name="serviceId" defaultValue={program.serviceId}>
+              <Label htmlFor="departmentId">Département *</Label>
+              <Select
+                value={selectedDepartmentId}
+                onValueChange={setSelectedDepartmentId}
+                required
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {services.map((s) => (
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} ({d.organization.name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="serviceId">Service (optionnel)</Label>
+              <Select name="serviceId" defaultValue={program.serviceId || undefined}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucun service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredServices.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
                     </SelectItem>

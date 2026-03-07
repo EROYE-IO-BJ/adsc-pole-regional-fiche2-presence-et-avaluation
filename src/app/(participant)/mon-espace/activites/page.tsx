@@ -141,7 +141,7 @@ export default function ParticipantActivitiesPage() {
                       )}
                     </div>
                   </div>
-                  <Badge variant="secondary">{activity.service.name}</Badge>
+                  {activity.service && <Badge variant="secondary">{activity.service.name}</Badge>}
                 </div>
               </CardHeader>
               <CardContent>

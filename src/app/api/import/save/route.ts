@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (user.role === Role.RESPONSABLE_SERVICE) {
       const serviceIds = await getUserServiceIds(user.id);
-      if (!serviceIds.includes(activity.serviceId)) {
+      if (activity.serviceId == null || !serviceIds.includes(activity.serviceId)) {
         return NextResponse.json({ error: "Accès insuffisant" }, { status: 403 });
       }
     }

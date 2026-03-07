@@ -440,13 +440,25 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash("password123", 12);
 
+    // ── Organization + Department ──
+    const org = await prisma.organization.upsert({
+      where: { slug: "seme-city" },
+      update: {},
+      create: { name: "Seme City", slug: "seme-city", description: "Seme City - Cite de l'Innovation et du Savoir" },
+    });
+    const dept = await prisma.department.upsert({
+      where: { slug: "ima" },
+      update: {},
+      create: { name: "Institut des Metiers d'Avenir (IMA)", slug: "ima", organizationId: org.id },
+    });
+
     // ── Services ──
     const serviceMap: Record<SvcKey, string> = {} as any;
     for (const sd of serviceDefs) {
       const svc = await prisma.service.upsert({
         where: { slug: sd.slug },
         update: {},
-        create: { name: sd.name, slug: sd.slug, description: sd.description },
+        create: { name: sd.name, slug: sd.slug, description: sd.description, departmentId: dept.id },
       });
       serviceMap[sd.key] = svc.id;
     }
@@ -492,7 +504,7 @@ export async function POST(request: NextRequest) {
     const programMap: Record<string, string> = {};
     for (const pd of programDefs) {
       const prog = await prisma.program.create({
-        data: { name: pd.name, description: pd.desc, serviceId: serviceMap[pd.svc] },
+        data: { name: pd.name, description: pd.desc, departmentId: dept.id, serviceId: serviceMap[pd.svc] },
       });
       programMap[pd.name] = prog.id;
     }

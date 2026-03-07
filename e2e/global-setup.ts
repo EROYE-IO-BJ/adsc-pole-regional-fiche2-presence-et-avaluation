@@ -29,13 +29,23 @@ export default async function globalSetup() {
       prisma.userService.deleteMany(),
       prisma.user.deleteMany(),
       prisma.service.deleteMany(),
+      prisma.department.deleteMany(),
+      prisma.organization.deleteMany(),
     ]);
 
     const password = await bcrypt.hash("password123", 12);
 
+    // Create organization + department
+    const org = await prisma.organization.create({
+      data: { name: "Org E2E", slug: "org-e2e" },
+    });
+    const dept = await prisma.department.create({
+      data: { name: "Dept E2E", slug: "dept-e2e", organizationId: org.id },
+    });
+
     // Create service
     const service = await prisma.service.create({
-      data: { name: "Service E2E", slug: "service-e2e" },
+      data: { name: "Service E2E", slug: "service-e2e", departmentId: dept.id },
     });
 
     // Create admin user
@@ -49,6 +59,11 @@ export default async function globalSetup() {
       },
     });
 
+    // Create a program
+    const program = await prisma.program.create({
+      data: { name: "Programme E2E", departmentId: dept.id, serviceId: service.id },
+    });
+
     // Create a FORMATION activity
     const formation = await prisma.activity.create({
       data: {
@@ -59,6 +74,7 @@ export default async function globalSetup() {
         status: "ACTIVE",
         serviceId: service.id,
         createdById: admin.id,
+        programId: program.id,
         sessions: {
           create: [
             { title: "Séance 1", startDate: new Date("2025-09-01"), isDefault: true },
@@ -79,6 +95,7 @@ export default async function globalSetup() {
         status: "ACTIVE",
         serviceId: service.id,
         createdById: admin.id,
+        programId: program.id,
         sessions: {
           create: { title: null, startDate: new Date("2025-09-01"), isDefault: true },
         },

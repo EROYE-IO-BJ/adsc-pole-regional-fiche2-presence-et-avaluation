@@ -13,7 +13,7 @@ beforeEach(async () => {
 
 describe("POST /api/retours", () => {
   it("should submit FORMATION feedback", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/retours", {
       body: {
@@ -39,7 +39,7 @@ describe("POST /api/retours", () => {
   });
 
   it("should submit SERVICE feedback", async () => {
-    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/retours", {
       body: {
@@ -61,7 +61,7 @@ describe("POST /api/retours", () => {
   });
 
   it("should resolve via session token", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
     const sessionToken = activity.sessions[0].accessToken;
 
     const req = createRequest("POST", "/api/retours", {
@@ -82,7 +82,7 @@ describe("POST /api/retours", () => {
   });
 
   it("should return 400 when activity is CLOSED", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id, {
       status: "CLOSED",
     });
 

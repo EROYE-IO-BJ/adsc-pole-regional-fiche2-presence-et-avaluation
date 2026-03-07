@@ -13,7 +13,7 @@ beforeEach(async () => {
 
 describe("POST /api/presences", () => {
   it("should submit attendance via activity token (resolves to default session)", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/presences", {
       body: {
@@ -32,7 +32,7 @@ describe("POST /api/presences", () => {
   });
 
   it("should submit attendance via session token directly", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
     const sessionToken = activity.sessions[0].accessToken;
 
     const req = createRequest("POST", "/api/presences", {
@@ -52,7 +52,7 @@ describe("POST /api/presences", () => {
   });
 
   it("should return 409 for duplicate email+session", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const body = {
       firstName: "Marie",
@@ -71,7 +71,7 @@ describe("POST /api/presences", () => {
   });
 
   it("should return 403 when registration required and user not registered", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id, {
       requiresRegistration: true,
     });
 
@@ -90,7 +90,7 @@ describe("POST /api/presences", () => {
   });
 
   it("should return 201 when registration required and user IS registered", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id, {
       requiresRegistration: true,
     });
 
@@ -117,7 +117,7 @@ describe("POST /api/presences", () => {
   });
 
   it("should return 400 when activity is CLOSED", async () => {
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id, {
       status: "CLOSED",
     });
 

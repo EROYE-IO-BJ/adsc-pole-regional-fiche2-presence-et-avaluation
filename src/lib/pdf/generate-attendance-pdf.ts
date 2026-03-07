@@ -14,7 +14,7 @@ interface ActivityInfo {
   title: string;
   date: Date;
   location: string | null;
-  serviceName: string;
+  serviceName: string | null;
   programName: string | null;
   intervenantName: string | null;
   sessionTitle?: string | null;

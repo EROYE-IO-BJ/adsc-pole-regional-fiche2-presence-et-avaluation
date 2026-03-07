@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     where,
     orderBy: { name: "asc" },
     include: {
+      department: { select: { name: true } },
       service: { select: { name: true } },
       _count: { select: { activities: true } },
     },
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Verify service access
-  if (user.role === Role.RESPONSABLE_SERVICE) {
+  if (user.role === Role.RESPONSABLE_SERVICE && validation.data.serviceId) {
     const hasAccess = await userCanAccessService(user.id, validation.data.serviceId);
     if (!hasAccess) {
       return NextResponse.json(
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
     data: {
       name: validation.data.name,
       description: validation.data.description || null,
-      serviceId: validation.data.serviceId,
+      departmentId: validation.data.departmentId,
+      serviceId: validation.data.serviceId || null,
     },
     include: {
       service: { select: { name: true } },

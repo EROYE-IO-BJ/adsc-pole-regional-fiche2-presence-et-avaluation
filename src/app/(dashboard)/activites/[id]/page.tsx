@@ -184,7 +184,7 @@ export default async function ActivityDetailPage({
                   {activity.location}
                 </span>
               )}
-              <span className="text-xs">Service : {activity.service.name}</span>
+              {activity.service && <span className="text-xs">Service : {activity.service.name}</span>}
             </div>
             {activity.intervenant && (
               <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">

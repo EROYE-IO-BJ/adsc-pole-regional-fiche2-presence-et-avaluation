@@ -18,21 +18,33 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
+type Department = {
+  id: string;
+  name: string;
+  organization: { name: string };
+};
+
 type Service = {
   id: string;
   name: string;
+  departmentId: string;
 };
 
 export default function NewProgramPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
 
   useEffect(() => {
-    fetch("/api/services")
-      .then((r) => r.json())
-      .then(setServices);
+    fetch("/api/departments").then((r) => r.json()).then(setDepartments).catch(() => {});
+    fetch("/api/services").then((r) => r.json()).then(setServices).catch(() => {});
   }, []);
+
+  const filteredServices = selectedDepartmentId
+    ? services.filter((s) => s.departmentId === selectedDepartmentId)
+    : services;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,7 +55,8 @@ export default function NewProgramPage() {
     const data = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
-      serviceId: formData.get("serviceId") as string,
+      departmentId: selectedDepartmentId,
+      serviceId: (formData.get("serviceId") as string) || undefined,
     };
 
     const res = await fetch("/api/programs", {
@@ -73,7 +86,7 @@ export default function NewProgramPage() {
         <div>
           <h1 className="text-2xl font-bold">Nouveau programme</h1>
           <p className="text-muted-foreground">
-            Créez un nouveau programme pour un service
+            Créez un nouveau programme pour un département
           </p>
         </div>
       </div>
@@ -105,20 +118,42 @@ export default function NewProgramPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="serviceId">Service *</Label>
-              <Select name="serviceId" required>
+              <Label htmlFor="departmentId">Département *</Label>
+              <Select
+                value={selectedDepartmentId}
+                onValueChange={setSelectedDepartmentId}
+                required
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un service" />
+                  <SelectValue placeholder="Sélectionner un département" />
                 </SelectTrigger>
                 <SelectContent>
-                  {services.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} ({d.organization.name})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedDepartmentId && filteredServices.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="serviceId">Service (optionnel)</Label>
+                <Select name="serviceId">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredServices.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={loading}>

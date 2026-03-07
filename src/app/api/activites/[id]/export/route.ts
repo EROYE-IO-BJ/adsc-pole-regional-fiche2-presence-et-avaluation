@@ -53,7 +53,7 @@ export async function GET(
     hasAccess = true;
   } else if (user.role === Role.RESPONSABLE_SERVICE) {
     const serviceIds = await getUserServiceIds(user.id);
-    hasAccess = serviceIds.includes(activity.serviceId);
+    hasAccess = activity.serviceId != null && serviceIds.includes(activity.serviceId);
   } else if (user.role === Role.INTERVENANT) {
     hasAccess = activity.intervenantId === user.id;
   }
@@ -174,7 +174,7 @@ export async function GET(
         title: activity.title,
         date: activity.startDate,
         location: activity.location,
-        serviceName: activity.service.name,
+        serviceName: activity.service?.name || null,
         programName: activity.program?.name || null,
         intervenantName: activity.intervenant?.name || null,
         sessionTitle,

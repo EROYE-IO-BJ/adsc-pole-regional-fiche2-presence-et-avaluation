@@ -14,7 +14,7 @@ beforeEach(async () => {
 describe("GET /api/activites/[id]/export", () => {
   it("should export attendances as CSV with Séance column", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     await prisma.attendance.create({
       data: {
@@ -44,7 +44,7 @@ describe("GET /api/activites/[id]/export", () => {
 
   it("should export FORMATION feedbacks with appropriate headers", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     await prisma.feedback.create({
       data: {
@@ -76,7 +76,7 @@ describe("GET /api/activites/[id]/export", () => {
 
   it("should export SERVICE feedbacks with different headers", async () => {
     mockAuthUser(users.admin);
-    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     await prisma.feedback.create({
       data: {
@@ -103,7 +103,7 @@ describe("GET /api/activites/[id]/export", () => {
 
   it("should filter by sessionId", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const session2 = await prisma.activitySession.create({
       data: { activityId: activity.id, startDate: new Date(), title: "Séance 2" },
@@ -130,7 +130,7 @@ describe("GET /api/activites/[id]/export", () => {
 
   it("should include Content-Disposition header with activity title", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id, {
       title: "Formation IA Avancée",
     });
 

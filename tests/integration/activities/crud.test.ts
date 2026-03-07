@@ -5,17 +5,9 @@ import { mockAuthUser, createTestUsers } from "../../helpers/auth";
 import { prisma } from "../../helpers/prisma";
 
 let users: Awaited<ReturnType<typeof createTestUsers>>;
-let program: { id: string };
-let program2: { id: string };
 
 beforeEach(async () => {
   users = await createTestUsers(prisma);
-  program = await prisma.program.create({
-    data: { name: "Programme Test", serviceId: users.service.id },
-  });
-  program2 = await prisma.program.create({
-    data: { name: "Programme Autre", serviceId: users.service2.id },
-  });
 });
 
 describe("POST /api/activites", () => {
@@ -29,7 +21,7 @@ describe("POST /api/activites", () => {
         endDate: "2025-08-01",
         type: "FORMATION",
         serviceId: users.service.id,
-        programId: program.id,
+        programId: users.program.id,
       },
     });
 
@@ -77,7 +69,7 @@ describe("POST /api/activites", () => {
         endDate: "2025-08-01",
         type: "FORMATION",
         serviceId: users.service.id,
-        programId: program.id,
+        programId: users.program.id,
       },
     });
 
@@ -96,7 +88,7 @@ describe("POST /api/activites", () => {
         endDate: "2025-08-01",
         type: "FORMATION",
         serviceId: users.service2.id,
-        programId: program2.id,
+        programId: users.program2.id,
       },
     });
 
@@ -196,6 +188,7 @@ async function createActivities() {
       startDate: new Date(),
       endDate: new Date(),
       serviceId: users.service.id,
+      programId: users.program.id,
       createdById: users.admin.id,
       sessions: { create: { startDate: new Date(), isDefault: true } },
     },
@@ -206,6 +199,7 @@ async function createActivities() {
       startDate: new Date(),
       endDate: new Date(),
       serviceId: users.service2.id,
+      programId: users.program2.id,
       createdById: users.admin.id,
       sessions: { create: { startDate: new Date(), isDefault: true } },
     },

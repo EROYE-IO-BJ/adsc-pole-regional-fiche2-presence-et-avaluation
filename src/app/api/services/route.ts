@@ -15,6 +15,7 @@ export async function GET() {
   const services = await prisma.service.findMany({
     orderBy: { name: "asc" },
     include: {
+      department: { select: { name: true } },
       _count: { select: { users: true, activities: true } },
     },
   });
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
       name: validation.data.name,
       slug: validation.data.slug,
       description: validation.data.description || null,
+      departmentId: validation.data.departmentId,
     },
   });
 

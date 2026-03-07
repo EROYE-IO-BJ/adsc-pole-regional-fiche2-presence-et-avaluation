@@ -14,7 +14,7 @@ beforeEach(async () => {
 describe("POST /api/import/save", () => {
   it("should import participants and return created/duplicates counts", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/import/save", {
       body: {
@@ -36,7 +36,7 @@ describe("POST /api/import/save", () => {
 
   it("should use provided sessionId", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     // Add a second session
     const session2 = await prisma.activitySession.create({
@@ -64,7 +64,7 @@ describe("POST /api/import/save", () => {
 
   it("should fallback to default session when no sessionId provided", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/import/save", {
       body: {
@@ -85,8 +85,8 @@ describe("POST /api/import/save", () => {
 
   it("should return 400 for session not belonging to activity", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
-    const otherActivity = await createFormationActivity(prisma, users.service.id, users.admin.id, {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+    const otherActivity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id, {
       title: "Other Formation",
     });
 
@@ -107,7 +107,7 @@ describe("POST /api/import/save", () => {
 
   it("should skip duplicates", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     // Create first attendance
     await prisma.attendance.create({
@@ -139,7 +139,7 @@ describe("POST /api/import/save", () => {
 
   it("should preserve PDF order via importOrder field", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/import/save", {
       body: {
@@ -172,7 +172,7 @@ describe("POST /api/import/save", () => {
 
   it("should continue importOrder from existing attendances", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     // First import
     await POST(createRequest("POST", "/api/import/save", {

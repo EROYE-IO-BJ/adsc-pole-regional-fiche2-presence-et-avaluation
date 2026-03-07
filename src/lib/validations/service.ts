@@ -7,6 +7,7 @@ export const createServiceSchema = z.object({
     .min(2, "Le slug doit contenir au moins 2 caractères")
     .regex(/^[a-z0-9-]+$/, "Le slug ne peut contenir que des lettres minuscules, chiffres et tirets"),
   description: z.string().optional(),
+  departmentId: z.string().min(1, "L'ID du département est requis"),
 });
 
 export const updateServiceSchema = createServiceSchema.partial();

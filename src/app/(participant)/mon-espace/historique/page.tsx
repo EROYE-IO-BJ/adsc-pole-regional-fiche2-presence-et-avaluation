@@ -104,7 +104,7 @@ export default function ParticipantHistoryPage() {
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {a.activity.service.name}
+                        {a.activity.service?.name}
                       </span>
                     </div>
                   </CardContent>

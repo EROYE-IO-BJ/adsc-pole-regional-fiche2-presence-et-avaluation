@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+
+type Department = {
+  id: string;
+  name: string;
+  organization: { name: string };
+};
 
 export default function NewServicePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    fetch("/api/departments").then((r) => r.json()).then(setDepartments).catch(() => {});
+  }, []);
 
   function generateSlug(name: string) {
     return name
@@ -33,6 +51,7 @@ export default function NewServicePage() {
       name: formData.get("name") as string,
       slug: formData.get("slug") as string,
       description: formData.get("description") as string,
+      departmentId: formData.get("departmentId") as string,
     };
 
     const res = await fetch("/api/services", {
@@ -74,6 +93,22 @@ export default function NewServicePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="departmentId">Département *</Label>
+              <Select name="departmentId" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un département" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} ({d.organization.name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="name">Nom *</Label>
               <Input

@@ -20,7 +20,7 @@ export async function GET() {
         select: { serviceId: true },
         distinct: ["serviceId"],
       });
-      serviceWhere.id = { in: activities.map((a) => a.serviceId) };
+      serviceWhere.id = { in: activities.map((a) => a.serviceId).filter((id): id is string => id !== null) };
     }
     // ADMIN: no filter
 

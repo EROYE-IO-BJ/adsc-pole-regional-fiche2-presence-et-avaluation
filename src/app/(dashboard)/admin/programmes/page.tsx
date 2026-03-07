@@ -10,7 +10,8 @@ type Program = {
   id: string;
   name: string;
   description: string | null;
-  service: { name: string };
+  service: { name: string } | null;
+  department: { name: string };
   _count: { activities: number };
 };
 
@@ -81,7 +82,8 @@ export default function ProgramsPage() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Service : {program.service.name}
+                        Département : {program.department.name}
+                        {program.service && ` — Service : ${program.service.name}`}
                       </p>
                     </div>
                     <div className="text-sm text-muted-foreground">

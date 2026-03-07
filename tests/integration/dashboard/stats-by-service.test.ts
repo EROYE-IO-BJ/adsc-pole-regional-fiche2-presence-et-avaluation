@@ -17,8 +17,8 @@ describe("GET /api/dashboard/stats/by-service", () => {
     mockAuthUser(users.admin);
 
     // Create activities in both services
-    const a1 = await createFormationActivity(prisma, users.service.id, users.admin.id);
-    const a2 = await createFormationActivity(prisma, users.service2.id, users.admin.id, {
+    const a1 = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+    const a2 = await createFormationActivity(prisma, users.service2.id, users.admin.id, users.program2.id, {
       title: "Formation Service 2",
     });
 
@@ -88,8 +88,8 @@ describe("GET /api/dashboard/stats/by-service", () => {
     mockAuthUser(users.admin);
 
     // Create activities in both services
-    await createFormationActivity(prisma, users.service.id, users.admin.id);
-    await createFormationActivity(prisma, users.service2.id, users.admin.id, {
+    await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+    await createFormationActivity(prisma, users.service2.id, users.admin.id, users.program2.id, {
       title: "Formation Autre",
     });
 

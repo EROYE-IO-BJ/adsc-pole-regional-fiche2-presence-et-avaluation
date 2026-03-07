@@ -69,37 +69,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Determine serviceId
-  let serviceId: string;
-  if (user.role === Role.ADMIN) {
-    serviceId = body.serviceId;
-    if (!serviceId) {
+  // Determine serviceId (now optional)
+  let serviceId: string | undefined = body.serviceId || undefined;
+  if (serviceId && user.role === Role.RESPONSABLE_SERVICE) {
+    const hasAccess = await userCanAccessService(user.id, serviceId);
+    if (!hasAccess) {
       return NextResponse.json(
-        { error: "L'ID du service est requis" },
-        { status: 400 }
+        { error: "Accès insuffisant à ce service" },
+        { status: 403 }
       );
     }
-  } else {
-    // RESPONSABLE_SERVICE: must provide serviceId and must have access
-    serviceId = body.serviceId;
-    if (!serviceId) {
-      // Fallback: use first service
-      const serviceIds = await getUserServiceIds(user.id);
-      if (serviceIds.length === 0) {
-        return NextResponse.json(
-          { error: "Aucun service associé" },
-          { status: 400 }
-        );
-      }
+  } else if (!serviceId && user.role === Role.RESPONSABLE_SERVICE) {
+    // Fallback: use first service
+    const serviceIds = await getUserServiceIds(user.id);
+    if (serviceIds.length > 0) {
       serviceId = serviceIds[0];
-    } else {
-      const hasAccess = await userCanAccessService(user.id, serviceId);
-      if (!hasAccess) {
-        return NextResponse.json(
-          { error: "Accès insuffisant à ce service" },
-          { status: 403 }
-        );
-      }
     }
   }
 
@@ -117,8 +101,8 @@ export async function POST(request: NextRequest) {
       type: validation.data.type,
       requiresRegistration: validation.data.requiresRegistration,
       intervenantId: validation.data.intervenantId || null,
-      programId: validation.data.programId || null,
-      serviceId,
+      programId: validation.data.programId,
+      serviceId: serviceId || null,
       createdById: user.id,
       sessions: {
         create: {

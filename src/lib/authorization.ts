@@ -37,7 +37,8 @@ export async function getUserServiceIds(userId: string): Promise<string[]> {
   return userServices.map((us) => us.serviceId);
 }
 
-export async function userCanAccessService(userId: string, serviceId: string): Promise<boolean> {
+export async function userCanAccessService(userId: string, serviceId: string | null): Promise<boolean> {
+  if (!serviceId) return false;
   const userService = await prisma.userService.findUnique({
     where: {
       userId_serviceId: { userId, serviceId },

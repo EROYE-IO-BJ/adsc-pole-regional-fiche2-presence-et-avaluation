@@ -15,7 +15,7 @@ beforeEach(async () => {
 describe("POST /api/sessions", () => {
   it("should return 400 when adding session to SERVICE activity", async () => {
     mockAuthUser(users.admin);
-    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/sessions", {
       body: {
@@ -32,7 +32,7 @@ describe("POST /api/sessions", () => {
 
   it("should allow adding session to FORMATION activity", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     const req = createRequest("POST", "/api/sessions", {
       body: {
@@ -52,7 +52,7 @@ describe("POST /api/sessions", () => {
 describe("DELETE /api/sessions/[id]", () => {
   it("should return 400 when deleting the last session", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
     const sessionId = activity.sessions[0].id;
 
     const req = createRequest("DELETE", `/api/sessions/${sessionId}`);
@@ -65,7 +65,7 @@ describe("DELETE /api/sessions/[id]", () => {
 
   it("should allow deleting when more than 1 session exists", async () => {
     mockAuthUser(users.admin);
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
     // Add second session
     const session2 = await prisma.activitySession.create({

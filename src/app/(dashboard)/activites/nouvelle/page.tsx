@@ -33,8 +33,8 @@ type Service = {
 type Program = {
   id: string;
   name: string;
-  serviceId: string;
-  service: { name: string };
+  serviceId: string | null;
+  service: { name: string } | null;
 };
 
 export default function NewActivityPage() {
@@ -191,10 +191,9 @@ export default function NewActivityPage() {
             {/* Service selector for admin and responsable */}
             {(isAdmin || isResponsable) && services.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="serviceId">Service *</Label>
+                <Label htmlFor="serviceId">Service</Label>
                 <Select
                   name="serviceId"
-                  required
                   value={selectedServiceId}
                   onValueChange={setSelectedServiceId}
                 >
@@ -215,9 +214,9 @@ export default function NewActivityPage() {
             {/* Program selector */}
             <div className="space-y-2">
               <Label htmlFor="programId">
-                Programme {activityType === "FORMATION" ? "*" : ""}
+                Programme *
               </Label>
-              <Select name="programId" required={activityType === "FORMATION"}>
+              <Select name="programId" required>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un programme" />
                 </SelectTrigger>

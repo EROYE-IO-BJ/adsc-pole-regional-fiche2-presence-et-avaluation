@@ -22,6 +22,19 @@ function shuffle<T>(arr: T[]): T[] {
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+function calcDurationMinutes(startTime: string, endTime: string): number {
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
 
 // ── Data pools ───────────────────────────────────────────────────────
 
@@ -111,405 +124,545 @@ const serviceImprovements = [
   null,null,null,
 ];
 
-// ── Service definitions ──────────────────────────────────────────────
+// ── Organization / Department / Service hierarchy ────────────────────
 
-type SvcKey =
-  | "programmes-formation"
-  | "programmes-incubation"
-  | "makerspace-scop"
-  | "valorisation-innovation"
-  | "ima-lingua"
-  | "career-center"
-  | "recrutement-mobilite";
+interface OrgDef {
+  name: string;
+  slug: string;
+  description: string;
+  departments: DeptDef[];
+}
+interface DeptDef {
+  name: string;
+  slug: string;
+  description: string;
+  services: SvcDef[];
+}
+interface SvcDef {
+  name: string;
+  slug: string;
+  description: string;
+}
 
-const serviceDefs: { key: SvcKey; name: string; slug: string; description: string }[] = [
-  { key: "programmes-formation", name: "Service des Programmes de Formation", slug: "programmes-formation", description: "Service de formation et de renforcement des competences" },
-  { key: "programmes-incubation", name: "Service des Programmes d'Incubation", slug: "programmes-incubation", description: "Service d'incubation et d'accompagnement des projets creatifs" },
-  { key: "makerspace-scop", name: "Makerspace - Seme City Open Park (SCOP)", slug: "makerspace-scop", description: "Tiers-lieu dedie a la fabrication numerique et au prototypage" },
-  { key: "valorisation-innovation", name: "Service de Valorisation de l'Innovation", slug: "valorisation-innovation", description: "Service de recherche, experimentation et valorisation de l'innovation" },
-  { key: "ima-lingua", name: "IMA Lingua", slug: "ima-lingua", description: "Centre de langues de Seme City" },
-  { key: "career-center", name: "Career Center", slug: "career-center", description: "Centre de carriere et d'orientation professionnelle" },
-  { key: "recrutement-mobilite", name: "Service Recrutement, Accueil et Mobilite", slug: "recrutement-mobilite", description: "Service de recrutement, accueil et mobilite internationale" },
+const orgDefs: OrgDef[] = [
+  {
+    name: "Agence de Développement de Sèmè City",
+    slug: "adsc",
+    description: "Agence de Développement de Sèmè City (ADSC)",
+    departments: [
+      {
+        name: "Montage des programmes",
+        slug: "montage-des-programmes",
+        description: "Département en charge du montage et de la validation des programmes de Sèmè City",
+        services: [
+          { name: "Formation", slug: "adsc-montage-formation", description: "Service de formation du département Montage des programmes" },
+          { name: "Opération", slug: "adsc-montage-operation", description: "Service des opérations du département Montage des programmes" },
+          { name: "Montage et validation de programmes", slug: "adsc-montage-validation", description: "Service de montage et validation de programmes" },
+          { name: "Bibliothèque", slug: "adsc-montage-bibliotheque", description: "Service de la bibliothèque" },
+          { name: "IMA Lingua", slug: "adsc-montage-ima-lingua", description: "Centre de langues IMA Lingua" },
+          { name: "Career Center", slug: "adsc-montage-career-center", description: "Centre de carrière et d'orientation professionnelle" },
+          { name: "Recrutement Accueil et Mobilité", slug: "adsc-montage-recrutement", description: "Service de recrutement, accueil et mobilité" },
+          { name: "Incubation", slug: "adsc-montage-incubation", description: "Service d'incubation du département Montage des programmes" },
+        ],
+      },
+      {
+        name: "Valorisation des Innovations",
+        slug: "valorisation-des-innovations",
+        description: "Département de valorisation des innovations de Sèmè City",
+        services: [
+          { name: "Opération", slug: "adsc-valorisation-operation", description: "Service des opérations du département Valorisation des Innovations" },
+          { name: "Formation", slug: "adsc-valorisation-formation", description: "Service de formation du département Valorisation des Innovations" },
+          { name: "Incubation", slug: "adsc-valorisation-incubation", description: "Service d'incubation du département Valorisation des Innovations" },
+          { name: "Développement de solutions", slug: "adsc-valorisation-dev-solutions", description: "Service de développement de solutions" },
+          { name: "TechIMA", slug: "adsc-valorisation-techima", description: "Service TechIMA de fabrication numérique" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "Sèmè City Institute of Technology and Innovation",
+    slug: "sciti",
+    description: "Sèmè City Institute of Technology and Innovation (SCITI)",
+    departments: [
+      {
+        name: "Département Formation",
+        slug: "departement-formation",
+        description: "Département de formation du SCITI",
+        services: [
+          { name: "Inscription", slug: "sciti-formation-inscription", description: "Service d'inscription" },
+          { name: "Admission", slug: "sciti-formation-admission", description: "Service d'admission" },
+        ],
+      },
+      {
+        name: "Département Recherche (X-TechLab)",
+        slug: "departement-recherche-x-techlab",
+        description: "Département de recherche et d'expérimentation X-TechLab du SCITI",
+        services: [
+          { name: "Appui à l'expérimentation", slug: "sciti-recherche-experimentation", description: "Service d'appui à l'expérimentation" },
+          { name: "Commercialisation", slug: "sciti-recherche-commercialisation", description: "Service de commercialisation" },
+        ],
+      },
+    ],
+  },
 ];
 
-// ── Locations ────────────────────────────────────────────────────────
+// ── Locations per department ─────────────────────────────────────────
 
-const LOCATIONS: Record<SvcKey, string[]> = {
-  "programmes-formation": [
-    "Salle de Formation A - Seme City","Salle de Formation B - Seme City","Salle de Formation C - Seme City",
-    "Amphitheatre Seme City","Lab Informatique - Seme City","Salle de classe D - Seme City",
-    "Salle Sante - Seme City","Salle Archi - Seme City","Laboratoire Sciences - Seme City",
+const LOCATIONS: Record<string, string[]> = {
+  "montage-des-programmes": [
+    "Salle de Formation A - Sèmè City","Salle de Formation B - Sèmè City","Salle de Formation C - Sèmè City",
+    "Amphithéâtre Sèmè City","Lab Informatique - Sèmè City","Salle de classe D - Sèmè City",
+    "Salle Santé - Sèmè City","Salle Archi - Sèmè City","Laboratoire Sciences - Sèmè City",
+    "Studio Film - Sèmè City","Atelier Couture - Sèmè City","Studio Animation - Sèmè City",
+    "Bibliothèque Sèmè City","Salle Lingua A - Sèmè City","Salle Career A - Sèmè City",
+    "Salle Accueil - Sèmè City","Espace Incubation - Sèmè City",
   ],
-  "programmes-incubation": [
-    "Studio Film - Seme City","Atelier Couture - Seme City","Studio Animation - Seme City",
-    "Salle de Projection - Seme City","Studio Narration - Seme City","Lab Jeux Video - Seme City",
-    "Espace Incubation - Seme City","Salle Creative - Seme City",
+  "valorisation-des-innovations": [
+    "Lab Innovation - Sèmè City","Salle de Conférence - Sèmè City","Hub Data - Sèmè City",
+    "Espace Co-création - Sèmè City","Salle de Recherche - Sèmè City","Bureau Innovation - Sèmè City",
+    "Fab Lab - Sèmè City","Atelier Bois - Sèmè City","Lab Électronique - Sèmè City",
+    "Espace Prototypage - Sèmè City","Atelier Céramique - Sèmè City",
   ],
-  "makerspace-scop": [
-    "Fab Lab - Seme City","Atelier Bois - Seme City","Atelier Textile - Seme City",
-    "Lab Electronique - Seme City","Atelier Ceramique - Seme City","Espace Prototypage - Seme City",
-    "Atelier Metal - Seme City","Salle CNC - Seme City",
+  "departement-formation": [
+    "Salle de Formation SCITI A","Salle de Formation SCITI B","Amphithéâtre SCITI",
+    "Lab Informatique SCITI","Salle de classe SCITI C","Bureau Inscription SCITI",
   ],
-  "valorisation-innovation": [
-    "Lab Innovation - Seme City","Salle de Conference - Seme City","Hub Data - Seme City",
-    "Espace Co-creation - Seme City","Salle de Recherche - Seme City","Bureau Innovation - Seme City",
-  ],
-  "ima-lingua": [
-    "Salle Lingua A - Seme City","Salle Lingua B - Seme City","Salle Lingua C - Seme City",
-    "Bibliotheque Seme City","Lab Digital Lingua - Seme City","Auditorium Seme City",
-  ],
-  "career-center": [
-    "Salle Career A - Seme City","Salle Career B - Seme City","Salle Career C - Seme City",
-    "Amphitheatre Seme City","Espace Coworking - Seme City","Hub Innovation - Seme City",
-  ],
-  "recrutement-mobilite": [
-    "Salle Accueil - Seme City","Bureau Recrutement - Seme City","Bureau Mobilite - Seme City",
-    "Salle de reunion - Seme City","Guichet Unique - Seme City",
+  "departement-recherche-x-techlab": [
+    "Lab X-TechLab A","Lab X-TechLab B","Salle de Conférence X-TechLab",
+    "Espace Expérimentation","Bureau Recherche SCITI","Atelier Prototypage SCITI",
   ],
 };
 
-// ── Program + Activity definitions ───────────────────────────────────
+// ── Program definitions (37 programs from Excel) ─────────────────────
 
 type ActDef = [string, "F" | "S"];
-interface ProgramDef { name: string; desc: string; svc: SvcKey; acts: ActDef[]; }
+interface ProgramDef {
+  name: string;
+  desc: string;
+  dept: string; // department slug
+  svc?: string; // optional service slug
+  acts: ActDef[];
+}
 
 const programDefs: ProgramDef[] = [
-  // ═══ Training Programs Service (13 programs) ═══════════════════════
+  // ═══ ADSC / Montage des programmes (22 programs) ═══════════════════
 
-  { name: "Le programme IMA leadership", desc: "Programme de developpement du leadership et des competences transversales", svc: "programmes-formation", acts: [
+  // Service: Formation
+  { name: "Le programme IMA leadership", desc: "Programme de développement du leadership et des compétences transversales", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
     ["Formation Leadership transformationnel","F"],["Atelier Prise de parole en public","F"],
-    ["Formation Gestion de conflits et mediation","F"],["Seminaire Intelligence emotionnelle","F"],
-    ["Coaching en leadership de projet","F"],["Masterclass Leadership feminin","F"],
-    ["Formation Management interculturel","F"],["Atelier Negociation et influence","F"],
+    ["Formation Gestion de conflits et médiation","F"],["Séminaire Intelligence émotionnelle","F"],
+    ["Coaching en leadership de projet","F"],["Masterclass Leadership féminin","F"],
+    ["Formation Management interculturel","F"],["Atelier Négociation et influence","F"],
   ]},
-  { name: "Les campus connectes", desc: "Programme de formation a distance via les campus connectes de Seme City", svc: "programmes-formation", acts: [
-    ["Formation Outils de collaboration en ligne","F"],["Atelier Creation de contenus numeriques","F"],
-    ["Initiation a la programmation web","F"],["Formation Cybersecurite pour etudiants","F"],
-    ["Cours Introduction au Cloud Computing","F"],["Atelier Methodologie d'apprentissage en ligne","F"],
-    ["Accompagnement technique etudiant","S"],
+  { name: "Les campus connectés", desc: "Programme de formation à distance via les campus connectés de Sèmè City", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Formation Outils de collaboration en ligne","F"],["Atelier Création de contenus numériques","F"],
+    ["Initiation à la programmation web","F"],["Formation Cybersécurité pour étudiants","F"],
+    ["Cours Introduction au Cloud Computing","F"],["Atelier Méthodologie d'apprentissage en ligne","F"],
+    ["Accompagnement technique étudiant","S"],
   ]},
-  { name: "Les programmes de formation en health-tech", desc: "Formations en technologies de la sante et innovation medicale", svc: "programmes-formation", acts: [
-    ["Formation Telemedecine et e-sante","F"],["Bootcamp Developpement d'applications sante","F"],
-    ["Formation Gestion de donnees medicales","F"],["Atelier IoT pour la sante","F"],
-    ["Seminaire Innovation sante en Afrique","F"],["Formation IA appliquee a la sante","F"],
-    ["Atelier Regulation et ethique en health-tech","F"],["Consultation healthtech startup","S"],
+  { name: "Les programmes de formation en health-tech", desc: "Formations en technologies de la santé et innovation médicale", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Formation Télémédecine et e-santé","F"],["Bootcamp Développement d'applications santé","F"],
+    ["Formation Gestion de données médicales","F"],["Atelier IoT pour la santé","F"],
+    ["Séminaire Innovation santé en Afrique","F"],["Formation IA appliquée à la santé","F"],
+    ["Atelier Régulation et éthique en health-tech","F"],["Consultation healthtech startup","S"],
   ]},
-  { name: "Le Master en architecture", desc: "Programme de Master en architecture et urbanisme durable pour l'Afrique", svc: "programmes-formation", acts: [
-    ["Atelier Conception architecturale durable","F"],["Formation Design bioclimatique et ecoconstruction","F"],
-    ["Cours Modelisation 3D et BIM","F"],["Seminaire Urbanisme africain contemporain","F"],
-    ["Atelier Maquettage et prototypage architectural","F"],["Formation Materiaux locaux et construction","F"],
+  { name: "Le Master en architecture", desc: "Programme de Master en architecture et urbanisme durable pour l'Afrique", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Atelier Conception architecturale durable","F"],["Formation Design bioclimatique et écoconstruction","F"],
+    ["Cours Modélisation 3D et BIM","F"],["Séminaire Urbanisme africain contemporain","F"],
+    ["Atelier Maquettage et prototypage architectural","F"],["Formation Matériaux locaux et construction","F"],
     ["Revue de projets architecturaux","S"],
   ]},
-  { name: "Le service du Digital Learning Lab", desc: "Laboratoire d'innovation pedagogique numerique de Seme City", svc: "programmes-formation", acts: [
-    ["Formation Conception pedagogique numerique","F"],["Atelier Creation de cours en ligne (MOOC)","F"],
-    ["Formation Realite virtuelle appliquee a l'education","F"],["Initiation au design UX/UI pedagogique","F"],
-    ["Formation Gamification de l'apprentissage","F"],["Atelier Evaluation et analytics educatifs","F"],
+  { name: "Le service du Digital Learning Lab", desc: "Laboratoire d'innovation pédagogique numérique de Sèmè City", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Formation Conception pédagogique numérique","F"],["Atelier Création de cours en ligne (MOOC)","F"],
+    ["Formation Réalité virtuelle appliquée à l'éducation","F"],["Initiation au design UX/UI pédagogique","F"],
+    ["Formation Gamification de l'apprentissage","F"],["Atelier Évaluation et analytics éducatifs","F"],
     ["Production de contenus e-learning","S"],["Support technique plateforme d'apprentissage","S"],
   ]},
-  { name: "Le service de bibliotheque", desc: "Bibliotheque et centre de ressources documentaires de Seme City", svc: "programmes-formation", acts: [
-    ["Atelier Recherche documentaire avancee","F"],["Formation Bases de donnees academiques","F"],
-    ["Initiation a la veille informationnelle","F"],["Club de lecture scientifique","F"],
-    ["Formation Gestion bibliographique (Zotero)","F"],["Atelier Redaction d'articles scientifiques","F"],
-    ["Consultation bibliographique personnalisee","S"],["Pret inter-bibliotheques","S"],
-  ]},
-  { name: "Le service de propedeutique", desc: "Programme preparatoire pour renforcer les bases academiques des apprenants", svc: "programmes-formation", acts: [
-    ["Mise a niveau en mathematiques","F"],["Mise a niveau en physique-chimie","F"],
-    ["Renforcement en methodologie universitaire","F"],["Atelier Redaction scientifique","F"],
-    ["Cours preparatoire en biologie","F"],["Formation Techniques d'apprentissage et gestion du temps","F"],
-    ["Orientation academique personnalisee","S"],
-  ]},
-  { name: "Les formations en IA/informatique de type Ecole 42 / Zone 01", desc: "Formations intensives en informatique et IA basees sur la pedagogie par projets", svc: "programmes-formation", acts: [
-    ["Piscine C - Initiation a la programmation","F"],["Formation Developpement web full-stack","F"],
-    ["Bootcamp Intelligence Artificielle","F"],["Formation Cybersecurite avancee","F"],
-    ["Atelier DevOps et Cloud Computing","F"],["Hackathon IA pour le developpement","F"],
-    ["Formation Python et Data Science","F"],["Cours Algorithmique et structures de donnees","F"],
-    ["Formation Developpement mobile (Flutter/React Native)","F"],["Mentorat technique individuel","S"],
-  ]},
-  { name: "Les formations de techniciens de laboratoire", desc: "Formations techniques pour les futurs techniciens de laboratoire et la biofabrication", svc: "programmes-formation", acts: [
-    ["Formation Techniques d'analyse biochimique","F"],["Formation Microbiologie appliquee","F"],
-    ["Cours Securite en laboratoire","F"],["Formation Instrumentation analytique","F"],
-    ["Atelier Controle qualite et BPF","F"],["Formation Biofabrication et production pharmaceutique","F"],
-    ["Calibration et maintenance d'equipements","S"],
-  ]},
-  { name: "La formation en IA des eleves et enseignements des colleges et lycees", desc: "Programme d'introduction de l'IA dans le systeme educatif beninois", svc: "programmes-formation", acts: [
-    ["Formation Initiation a la programmation pour collegiens","F"],["Atelier IA pour lyceens - Niveau debutant","F"],
-    ["Formation Fondamentaux du Machine Learning pour enseignants","F"],["Atelier Robotique educative et IA","F"],
+  { name: "La formation en IA des élèves et enseignements des collèges et lycées", desc: "Programme d'introduction de l'IA dans le système éducatif béninois", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Formation Initiation à la programmation pour collégiens","F"],["Atelier IA pour lycéens - Niveau débutant","F"],
+    ["Formation Fondamentaux du Machine Learning pour enseignants","F"],["Atelier Robotique éducative et IA","F"],
     ["Cours NLP et traitement du langage pour enseignants","F"],["Formation Certification enseignants en IA","F"],
-    ["Atelier Creation de ressources pedagogiques IA","F"],["Accompagnement clubs IA dans les etablissements","S"],
+    ["Atelier Création de ressources pédagogiques IA","F"],["Accompagnement clubs IA dans les établissements","S"],
   ]},
-  { name: "Les Olympiades de l'Intelligence Artificielle (IA)", desc: "Preparation des lyceens beninois aux Olympiades internationales de l'IA", svc: "programmes-formation", acts: [
-    ["Formation Fondamentaux de l'IA pour lyceens","F"],["Atelier Programmation Python pour l'IA","F"],
-    ["Bootcamp Preparation aux Olympiades internationales","F"],["Formation Machine Learning et Deep Learning","F"],
-    ["Atelier NLP et traitement du langage","F"],["Olympiades nationales d'IA - Selection","F"],
-    ["Evaluation et suivi des candidats","S"],
+  { name: "Les Olympiades de l'Intelligence Artificielle (IA)", desc: "Préparation des lycéens béninois aux Olympiades internationales de l'IA", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Formation Fondamentaux de l'IA pour lycéens","F"],["Atelier Programmation Python pour l'IA","F"],
+    ["Bootcamp Préparation aux Olympiades internationales","F"],["Formation Machine Learning et Deep Learning","F"],
+    ["Atelier NLP et traitement du langage","F"],["Olympiades nationales d'IA - Sélection","F"],
+    ["Évaluation et suivi des candidats","S"],
   ]},
-  { name: "L'Ecole des Arts du Benin", desc: "Ecole de formation aux arts visuels, decoratifs et vivants", svc: "programmes-formation", acts: [
-    ["Formation Arts plastiques contemporains","F"],["Atelier Sculpture et modelage","F"],
-    ["Cours Peinture techniques mixtes","F"],["Formation Art numerique et creation digitale","F"],
-    ["Masterclass Performance artistique","F"],["Atelier Photographie artistique","F"],
-    ["Formation Design textile et mode","F"],["Atelier Serigraphie et gravure","F"],
-    ["Exposition et critique d'oeuvres","S"],
+  { name: "Les formations en IA/informatique de type École 42 / Zone 01", desc: "Formations intensives en informatique et IA basées sur la pédagogie par projets", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Piscine C - Initiation à la programmation","F"],["Formation Développement web full-stack","F"],
+    ["Bootcamp Intelligence Artificielle","F"],["Formation Cybersécurité avancée","F"],
+    ["Atelier DevOps et Cloud Computing","F"],["Hackathon IA pour le développement","F"],
+    ["Formation Python et Data Science","F"],["Cours Algorithmique et structures de données","F"],
+    ["Formation Développement mobile (Flutter/React Native)","F"],["Mentorat technique individuel","S"],
   ]},
-  { name: "L'African Screen Institute", desc: "Institut de formation aux metiers des industries de l'ecran", svc: "programmes-formation", acts: [
-    ["Formation Realisation cinematographique","F"],["Atelier Ecriture de scenario","F"],
-    ["Formation Production audiovisuelle","F"],["Cours Montage et post-production","F"],
-    ["Masterclass Direction d'acteurs","F"],["Formation Animation et VFX","F"],
-    ["Atelier Narration et XR","F"],["Projection et analyse de films africains","S"],
+  { name: "Les formations de techniciens de laboratoire", desc: "Formations techniques pour les futurs techniciens de laboratoire et la biofabrication", dept: "montage-des-programmes", svc: "adsc-montage-formation", acts: [
+    ["Formation Techniques d'analyse biochimique","F"],["Formation Microbiologie appliquée","F"],
+    ["Cours Sécurité en laboratoire","F"],["Formation Instrumentation analytique","F"],
+    ["Atelier Contrôle qualité et BPF","F"],["Formation Biofabrication et production pharmaceutique","F"],
+    ["Calibration et maintenance d'équipements","S"],
   ]},
 
-  // ═══ Incubation Programs Service (5 programs) ═════════════════════
+  // Service: Opération
+  { name: "Le service de propédeutique", desc: "Programme préparatoire pour renforcer les bases académiques des apprenants", dept: "montage-des-programmes", svc: "adsc-montage-operation", acts: [
+    ["Mise à niveau en mathématiques","F"],["Mise à niveau en physique-chimie","F"],
+    ["Renforcement en méthodologie universitaire","F"],["Atelier Rédaction scientifique","F"],
+    ["Cours préparatoire en biologie","F"],["Formation Techniques d'apprentissage et gestion du temps","F"],
+    ["Orientation académique personnalisée","S"],
+  ]},
 
-  { name: "Seme City Film Lab", desc: "Laboratoire de creation et experimentation cinematographique", svc: "programmes-incubation", acts: [
-    ["Residence de creation cinematographique","F"],["Formation Documentaire creatif","F"],
-    ["Atelier Courts-metrages","F"],["Workshop Son et design sonore","F"],
-    ["Formation Animation pour le cinema","F"],["Atelier Scenarisation et storyboard","F"],
+  // Service: Bibliothèque
+  { name: "Le service de bibliothèque", desc: "Bibliothèque et centre de ressources documentaires de Sèmè City", dept: "montage-des-programmes", svc: "adsc-montage-bibliotheque", acts: [
+    ["Atelier Recherche documentaire avancée","F"],["Formation Bases de données académiques","F"],
+    ["Initiation à la veille informationnelle","F"],["Club de lecture scientifique","F"],
+    ["Formation Gestion bibliographique (Zotero)","F"],["Atelier Rédaction d'articles scientifiques","F"],
+    ["Consultation bibliographique personnalisée","S"],["Prêt inter-bibliothèques","S"],
+  ]},
+
+  // Service: IMA Lingua
+  { name: "Le centre de langues, IMA Lingua", desc: "Centre de langues multilingue pour la communauté de Sèmè City et au-delà", dept: "montage-des-programmes", svc: "adsc-montage-ima-lingua", acts: [
+    ["Formation Anglais professionnel - Niveau B2","F"],["Cours Français Langue Étrangère - Niveau A2","F"],
+    ["Atelier Conversation en mandarin","F"],["Préparation au DELF B1","F"],
+    ["Formation Espagnol professionnel","F"],["Cours intensif de portugais","F"],
+    ["Atelier Écriture académique en anglais","F"],["Formation Anglais technique pour ingénieurs","F"],
+    ["Cours Français des affaires","F"],["Atelier Communication interculturelle","F"],
+    ["Évaluation de niveau linguistique","S"],["Traduction certifiée de documents officiels","S"],
+  ]},
+
+  // Service: Career Center
+  { name: "Le Career Center (service placement)", desc: "Centre de carrière et d'insertion professionnelle des apprenants de Sèmè City", dept: "montage-des-programmes", svc: "adsc-montage-career-center", acts: [
+    ["Atelier CV et lettre de motivation","F"],["Simulation d'entretien d'embauche","F"],
+    ["Formation Personal Branding et LinkedIn","F"],["Forum entreprises et recrutement","F"],
+    ["Formation Entrepreneuriat et Business Plan","F"],["Atelier Techniques de recherche d'emploi","F"],
+    ["Formation Communication professionnelle","F"],["Masterclass Reconversion professionnelle","F"],
+    ["Coaching carrière individuel","S"],["Mise en relation entreprises-candidats","S"],
+  ]},
+
+  // Service: Recrutement Accueil et Mobilité
+  { name: "Le service recrutement, accueil et mobilité des apprenants et enseignants", desc: "Service pilotant le parcours des apprenants et enseignants à Sèmè City", dept: "montage-des-programmes", svc: "adsc-montage-recrutement", acts: [
+    ["Formation Intégration culturelle","F"],["Atelier Procédures administratives au Bénin","F"],
+    ["Formation Droit du travail béninois","F"],["Atelier Networking professionnel","F"],
+    ["Formation Gestion de la mobilité internationale","F"],
+    ["Assistance visa et titre de séjour","S"],["Accompagnement logement","S"],
+    ["Service de relocation internationale","S"],["Accompagnement ouverture de compte bancaire","S"],
+  ]},
+
+  // Service: Incubation
+  { name: "Sèmè City Film Lab", desc: "Laboratoire de création et expérimentation cinématographique", dept: "montage-des-programmes", svc: "adsc-montage-incubation", acts: [
+    ["Résidence de création cinématographique","F"],["Formation Documentaire créatif","F"],
+    ["Atelier Courts-métrages","F"],["Workshop Son et design sonore","F"],
+    ["Formation Animation pour le cinéma","F"],["Atelier Scénarisation et storyboard","F"],
     ["Projection des films du lab","S"],
   ]},
-  { name: "Fashion Led by Youth", desc: "Programme de formation et incubation dans le design de mode pour les jeunes createurs", svc: "programmes-incubation", acts: [
+  { name: "Fashion Led by Youth", desc: "Programme de formation et incubation dans le design de mode pour les jeunes créateurs", dept: "montage-des-programmes", svc: "adsc-montage-incubation", acts: [
     ["Formation Design de mode durable","F"],["Atelier Patronage et couture","F"],
     ["Formation Stylisme et tendances","F"],["Cours Textile et impression","F"],
     ["Atelier Accessoires et maroquinerie","F"],["Formation Business de la mode","F"],
     ["Masterclass Branding de marque de mode","F"],
-    ["Defile et presentation de collections","S"],["Consultation design de mode","S"],
+    ["Défilé et présentation de collections","S"],["Consultation design de mode","S"],
   ]},
-  { name: "IncubIMA Animation", desc: "Incubateur specialise dans l'animation 2D/3D et le motion design", svc: "programmes-incubation", acts: [
+  { name: "IncubIMA Animation", desc: "Incubateur spécialisé dans l'animation 2D/3D et le motion design", dept: "montage-des-programmes", svc: "adsc-montage-incubation", acts: [
     ["Formation Animation 2D","F"],["Cours Animation 3D et motion design","F"],
     ["Atelier Character design","F"],["Formation Storyboarding","F"],
     ["Workshop Stop-motion","F"],["Atelier Direction artistique animation","F"],
     ["Revue de portfolio animation","S"],
   ]},
-  { name: "IncubIMA Narration", desc: "Incubateur dedie a l'ecriture creative et la narration transmedia", svc: "programmes-incubation", acts: [
-    ["Formation Ecriture creative","F"],["Atelier Narration transmedia","F"],
-    ["Cours Storytelling pour le digital","F"],["Formation Ecriture de bande dessinee","F"],
+  { name: "IncubIMA Narration", desc: "Incubateur dédié à l'écriture créative et la narration transmédia", dept: "montage-des-programmes", svc: "adsc-montage-incubation", acts: [
+    ["Formation Écriture créative","F"],["Atelier Narration transmédia","F"],
+    ["Cours Storytelling pour le digital","F"],["Formation Écriture de bande dessinée","F"],
     ["Workshop Slam et spoken word","F"],["Atelier Podcast et narration audio","F"],
     ["Lecture et critique de manuscrits","S"],
   ]},
-  { name: "IncubIMA Jeux Video", desc: "Incubateur specialise dans la creation de jeux video et experiences interactives", svc: "programmes-incubation", acts: [
+  { name: "IncubIMA Jeux Vidéo", desc: "Incubateur spécialisé dans la création de jeux vidéo et expériences interactives", dept: "montage-des-programmes", svc: "adsc-montage-incubation", acts: [
     ["Formation Game design et level design","F"],["Cours Programmation de jeux (Unity)","F"],
-    ["Atelier Art pour jeux video","F"],["Formation Sound design pour jeux","F"],
-    ["Game Jam IncubIMA","F"],["Formation Monetisation et publishing","F"],
+    ["Atelier Art pour jeux vidéo","F"],["Formation Sound design pour jeux","F"],
+    ["Game Jam IncubIMA","F"],["Formation Monétisation et publishing","F"],
     ["Test et feedback de prototypes","S"],
   ]},
 
-  // ═══ Makerspace – SCOP (4 programs) ═══════════════════════════════
-
-  { name: "Les programmes fondamentaux du TechIMA", desc: "Programmes de fabrication numerique du makerspace TechIMA", svc: "makerspace-scop", acts: [
-    ["Formation Impression 3D et prototypage","F"],["Atelier Decoupe laser et CNC","F"],
-    ["Cours Electronique et Arduino","F"],["Formation CAO/DAO","F"],
-    ["Workshop Fabrication de PCB","F"],["Atelier Robotique educative","F"],
-    ["Formation Programmation de microcontroleurs","F"],["Acces libre au Fab Lab","S"],
+  // Service: Montage et validation de programmes
+  { name: "L'École des Arts du Bénin", desc: "École de formation aux arts visuels, décoratifs et vivants", dept: "montage-des-programmes", svc: "adsc-montage-validation", acts: [
+    ["Formation Arts plastiques contemporains","F"],["Atelier Sculpture et modelage","F"],
+    ["Cours Peinture techniques mixtes","F"],["Formation Art numérique et création digitale","F"],
+    ["Masterclass Performance artistique","F"],["Atelier Photographie artistique","F"],
+    ["Formation Design textile et mode","F"],["Atelier Sérigraphie et gravure","F"],
+    ["Exposition et critique d'œuvres","S"],
   ]},
-  { name: "Digital Artisan", desc: "Programme d'accompagnement des artisans dans l'adoption de la fabrication numerique", svc: "makerspace-scop", acts: [
-    ["Formation Fabrication numerique pour artisans du bois","F"],
-    ["Atelier Fabrication numerique pour artisans du textile","F"],
-    ["Cours Prototypage et developpement produit","F"],["Formation Creation de marque artisanale","F"],
-    ["Atelier Mise en visibilite et e-commerce","F"],["Workshop Design assiste par ordinateur pour artisans","F"],
-    ["Consultation projet artisanal numerique","S"],
-  ]},
-  { name: "TechIMA Seniors", desc: "Programme intergenerationnel de fabrication numerique pour artisans experimentes", svc: "makerspace-scop", acts: [
-    ["Formation Prototypage pour artisans seniors","F"],
-    ["Atelier Transmission intergenerationnelle de savoir-faire","F"],
-    ["Cours Introduction a la fabrication numerique","F"],
-    ["Formation Competences pedagogiques pour jeunes mentors","F"],
-    ["Workshop Documentation de methodes artisanales","F"],
-    ["Accompagnement personnalise artisan senior","S"],
-  ]},
-  { name: "La Fabrique des Metiers d'Art", desc: "Laboratoires dedies aux metiers d'art, transmission, experimentation et production", svc: "makerspace-scop", acts: [
-    ["Formation Tissage traditionnel et contemporain","F"],["Atelier Sculpture sur bois","F"],
-    ["Formation Poterie et ceramique moderne","F"],["Cours Teintures et batik","F"],
-    ["Atelier Vannerie et design","F"],["Formation Maroquinerie artisanale","F"],
-    ["Atelier Ferronnerie d'art","F"],["Exposition et vente d'oeuvres artisanales","S"],
+  { name: "L'African Screen Institute", desc: "Institut de formation aux métiers des industries de l'écran", dept: "montage-des-programmes", svc: "adsc-montage-validation", acts: [
+    ["Formation Réalisation cinématographique","F"],["Atelier Écriture de scénario","F"],
+    ["Formation Production audiovisuelle","F"],["Cours Montage et post-production","F"],
+    ["Masterclass Direction d'acteurs","F"],["Formation Animation et VFX","F"],
+    ["Atelier Narration et XR","F"],["Projection et analyse de films africains","S"],
   ]},
 
-  // ═══ Innovation Valorization Service (4 programs) ═════════════════
+  // ═══ ADSC / Valorisation des Innovations (8 programs) ══════════════
 
-  { name: "Le barometre de l'innovation", desc: "Outil de mesure et de valorisation des formes d'innovation africaines", svc: "valorisation-innovation", acts: [
-    ["Formation Methodologie de mesure de l'innovation africaine","F"],
+  // Service: Formation
+  { name: "Le baromètre de l'innovation", desc: "Outil de mesure et de valorisation des formes d'innovation africaines", dept: "valorisation-des-innovations", svc: "adsc-valorisation-formation", acts: [
+    ["Formation Méthodologie de mesure de l'innovation africaine","F"],
     ["Atelier Conception d'indicateurs d'innovation","F"],
-    ["Seminaire Panorama de l'innovation en Afrique de l'Ouest","F"],
-    ["Formation Enquetes de terrain numeriques","F"],["Atelier Analyse de donnees qualitatives","F"],
-    ["Publication et diffusion du barometre","S"],
+    ["Séminaire Panorama de l'innovation en Afrique de l'Ouest","F"],
+    ["Formation Enquêtes de terrain numériques","F"],["Atelier Analyse de données qualitatives","F"],
+    ["Publication et diffusion du baromètre","S"],
   ]},
-  { name: "Le Ouidah Living Lab", desc: "Laboratoire territorial d'innovation urbaine et environnementale a Ouidah", svc: "valorisation-innovation", acts: [
-    ["Formation Methodologie Living Lab","F"],["Atelier Co-creation de solutions urbaines","F"],
-    ["Seminaire Assainissement et gestion des dechets","F"],
-    ["Formation Eco-construction et materiaux durables","F"],
-    ["Atelier Numerisation du patrimoine culturel","F"],
+  { name: "Le Ouidah Living Lab", desc: "Laboratoire territorial d'innovation urbaine et environnementale à Ouidah", dept: "valorisation-des-innovations", svc: "adsc-valorisation-formation", acts: [
+    ["Formation Méthodologie Living Lab","F"],["Atelier Co-création de solutions urbaines","F"],
+    ["Séminaire Assainissement et gestion des déchets","F"],
+    ["Formation Éco-construction et matériaux durables","F"],
+    ["Atelier Numérisation du patrimoine culturel","F"],
     ["Accompagnement de projets d'innovation locale","S"],["Diagnostic territorial participatif","S"],
   ]},
-  { name: "L'IMA Data & Digital Excellence hub", desc: "Hub de services numeriques et data/IA pour les entreprises", svc: "valorisation-innovation", acts: [
-    ["Formation Developpement logiciel selon standards internationaux","F"],
-    ["Bootcamp Data Science et IA appliquee","F"],
-    ["Formation Services digitaux et operations data","F"],
-    ["Atelier Ethique et gouvernance des donnees","F"],
+
+  // Service: Opération
+  { name: "L'IMA Data & Digital Excellence hub", desc: "Hub de services numériques et data/IA pour les entreprises", dept: "valorisation-des-innovations", svc: "adsc-valorisation-operation", acts: [
+    ["Formation Développement logiciel selon standards internationaux","F"],
+    ["Bootcamp Data Science et IA appliquée","F"],
+    ["Formation Services digitaux et opérations data","F"],
+    ["Atelier Éthique et gouvernance des données","F"],
     ["Programme d'insertion professionnelle tech","F"],["Formation Data Engineering et pipelines","F"],
-    ["Consultation en transformation digitale","S"],["Accompagnement creation de startup tech","S"],
+    ["Consultation en transformation digitale","S"],["Accompagnement création de startup tech","S"],
   ]},
-  { name: "Le programme MIT REAP - partenariat avec le Ministere de la Sante et l'ASIN", desc: "Programme d'elite du MIT pour structurer des ecosystemes d'innovation en sante", svc: "valorisation-innovation", acts: [
-    ["Seminaire Structuration d'ecosystemes d'innovation","F"],
-    ["Formation Politiques publiques et innovation en sante","F"],
-    ["Atelier Methodologie MIT REAP","F"],
-    ["Workshop Alignement acteurs publics-prives-academiques","F"],
-    ["Masterclass Acceleration HealthTech au Benin","F"],
-    ["Consultation strategie ecosysteme innovation","S"],
-  ]},
-
-  // ═══ IMA Lingua (1 program) ═══════════════════════════════════════
-
-  { name: "Le centre de langues, IMA Lingua", desc: "Centre de langues multilingue pour la communaute de Seme City et au-dela", svc: "ima-lingua", acts: [
-    ["Formation Anglais professionnel - Niveau B2","F"],["Cours Francais Langue Etrangere - Niveau A2","F"],
-    ["Atelier Conversation en mandarin","F"],["Preparation au DELF B1","F"],
-    ["Formation Espagnol professionnel","F"],["Cours intensif de portugais","F"],
-    ["Atelier Ecriture academique en anglais","F"],["Formation Anglais technique pour ingenieurs","F"],
-    ["Cours Francais des affaires","F"],["Atelier Communication interculturelle","F"],
-    ["Evaluation de niveau linguistique","S"],["Traduction certifiee de documents officiels","S"],
+  { name: "Le programme MIT REAP", desc: "Programme d'élite du MIT pour structurer des écosystèmes d'innovation en santé — partenariat avec le Ministère de la Santé et l'ASIN", dept: "valorisation-des-innovations", svc: "adsc-valorisation-operation", acts: [
+    ["Séminaire Structuration d'écosystèmes d'innovation","F"],
+    ["Formation Politiques publiques et innovation en santé","F"],
+    ["Atelier Méthodologie MIT REAP","F"],
+    ["Workshop Alignement acteurs publics-privés-académiques","F"],
+    ["Masterclass Accélération HealthTech au Bénin","F"],
+    ["Consultation stratégie écosystème innovation","S"],
   ]},
 
-  // ═══ Career Center (1 program) ════════════════════════════════════
+  // Service: Incubation
+  // (no specific programs listed for incubation in this dept in the Excel)
 
-  { name: "Le Career Center (service placement)", desc: "Centre de carriere et d'insertion professionnelle des apprenants de Seme City", svc: "career-center", acts: [
-    ["Atelier CV et lettre de motivation","F"],["Simulation d'entretien d'embauche","F"],
-    ["Formation Personal Branding et LinkedIn","F"],["Forum entreprises et recrutement","F"],
-    ["Formation Entrepreneuriat et Business Plan","F"],["Atelier Techniques de recherche d'emploi","F"],
-    ["Formation Communication professionnelle","F"],["Masterclass Reconversion professionnelle","F"],
-    ["Coaching carriere individuel","S"],["Mise en relation entreprises-candidats","S"],
+  // Service: Développement de solutions
+  // (no specific programs listed)
+
+  // Service: TechIMA
+  { name: "Les programmes fondamentaux du TechIMA", desc: "Programmes de fabrication numérique du makerspace TechIMA", dept: "valorisation-des-innovations", svc: "adsc-valorisation-techima", acts: [
+    ["Formation Impression 3D et prototypage","F"],["Atelier Découpe laser et CNC","F"],
+    ["Cours Électronique et Arduino","F"],["Formation CAO/DAO","F"],
+    ["Workshop Fabrication de PCB","F"],["Atelier Robotique éducative","F"],
+    ["Formation Programmation de microcontrôleurs","F"],["Accès libre au Fab Lab","S"],
+  ]},
+  { name: "Digital Artisan", desc: "Programme d'accompagnement des artisans dans l'adoption de la fabrication numérique", dept: "valorisation-des-innovations", svc: "adsc-valorisation-techima", acts: [
+    ["Formation Fabrication numérique pour artisans du bois","F"],
+    ["Atelier Fabrication numérique pour artisans du textile","F"],
+    ["Cours Prototypage et développement produit","F"],["Formation Création de marque artisanale","F"],
+    ["Atelier Mise en visibilité et e-commerce","F"],["Workshop Design assisté par ordinateur pour artisans","F"],
+    ["Consultation projet artisanal numérique","S"],
+  ]},
+  { name: "TechIMA Seniors", desc: "Programme intergénérationnel de fabrication numérique pour artisans expérimentés", dept: "valorisation-des-innovations", svc: "adsc-valorisation-techima", acts: [
+    ["Formation Prototypage pour artisans seniors","F"],
+    ["Atelier Transmission intergénérationnelle de savoir-faire","F"],
+    ["Cours Introduction à la fabrication numérique","F"],
+    ["Formation Compétences pédagogiques pour jeunes mentors","F"],
+    ["Workshop Documentation de méthodes artisanales","F"],
+    ["Accompagnement personnalisé artisan senior","S"],
+  ]},
+  { name: "La Fabrique des Métiers d'Art", desc: "Laboratoires dédiés aux métiers d'art, transmission, expérimentation et production", dept: "valorisation-des-innovations", svc: "adsc-valorisation-techima", acts: [
+    ["Formation Tissage traditionnel et contemporain","F"],["Atelier Sculpture sur bois","F"],
+    ["Formation Poterie et céramique moderne","F"],["Cours Teintures et batik","F"],
+    ["Atelier Vannerie et design","F"],["Formation Maroquinerie artisanale","F"],
+    ["Atelier Ferronnerie d'art","F"],["Exposition et vente d'œuvres artisanales","S"],
   ]},
 
-  // ═══ Recrutement, Accueil et Mobilité (1 program) ═════════════════
+  // ═══ SCITI / Département Formation (4 programs) ════════════════════
 
-  { name: "Le service recrutement, accueil et mobilite des apprenants et enseignants", desc: "Service pilotant le parcours des apprenants et enseignants a Seme City", svc: "recrutement-mobilite", acts: [
-    ["Formation Integration culturelle","F"],["Atelier Procedures administratives au Benin","F"],
-    ["Formation Droit du travail beninois","F"],["Atelier Networking professionnel","F"],
-    ["Formation Gestion de la mobilite internationale","F"],
-    ["Assistance visa et titre de sejour","S"],["Accompagnement logement","S"],
-    ["Service de relocation internationale","S"],["Accompagnement ouverture de compte bancaire","S"],
+  { name: "Programme de Licence en Sciences et Technologies", desc: "Formation de premier cycle en sciences et technologies au SCITI", dept: "departement-formation", svc: "sciti-formation-inscription", acts: [
+    ["Cours Mathématiques fondamentales","F"],["Formation Physique expérimentale","F"],
+    ["Cours Introduction aux sciences de l'ingénieur","F"],["Atelier Programmation scientifique","F"],
+    ["Séminaire Méthodologie de recherche","F"],["Évaluation des candidatures","S"],
+  ]},
+  { name: "Programme de Master en Innovation Technologique", desc: "Formation de deuxième cycle en innovation technologique au SCITI", dept: "departement-formation", svc: "sciti-formation-admission", acts: [
+    ["Formation Management de l'innovation","F"],["Cours Propriété intellectuelle et brevets","F"],
+    ["Atelier Design thinking et prototypage","F"],["Séminaire Entrepreneuriat technologique","F"],
+    ["Formation Financement de l'innovation","F"],["Accompagnement mémoire de recherche","S"],
+  ]},
+  { name: "Programme de formation continue SCITI", desc: "Formations courtes et certifiantes pour les professionnels", dept: "departement-formation", svc: "sciti-formation-inscription", acts: [
+    ["Formation Leadership et gestion d'équipe","F"],["Atelier Transformation digitale","F"],
+    ["Cours Gestion de projet agile","F"],["Formation Data Analytics pour managers","F"],
+    ["Séminaire Intelligence artificielle pour dirigeants","F"],
+    ["Inscription et orientation","S"],["Suivi post-formation","S"],
+  ]},
+  { name: "Programme d'été SCITI", desc: "Programme intensif d'été en sciences, technologie et innovation", dept: "departement-formation", svc: "sciti-formation-admission", acts: [
+    ["Bootcamp Coding intensif","F"],["Atelier Robotique et électronique","F"],
+    ["Formation Design et fabrication 3D","F"],["Cours Introduction à l'IA","F"],
+    ["Hackathon Innovation sociale","F"],["Sélection et admission des candidats","S"],
+  ]},
+
+  // ═══ SCITI / Département Recherche X-TechLab (3 programs) ══════════
+
+  { name: "Programme de recherche appliquée X-TechLab", desc: "Programme de recherche appliquée en technologies émergentes", dept: "departement-recherche-x-techlab", svc: "sciti-recherche-experimentation", acts: [
+    ["Formation Méthodologie de recherche appliquée","F"],["Atelier Rédaction d'articles scientifiques","F"],
+    ["Séminaire Technologies émergentes en Afrique","F"],["Formation Expérimentation et validation","F"],
+    ["Workshop Collaboration recherche-industrie","F"],["Appui technique aux chercheurs","S"],
+  ]},
+  { name: "Programme de valorisation des résultats de recherche", desc: "Accompagnement à la valorisation et commercialisation des résultats de recherche", dept: "departement-recherche-x-techlab", svc: "sciti-recherche-commercialisation", acts: [
+    ["Formation Transfert de technologie","F"],["Atelier Propriété intellectuelle","F"],
+    ["Cours Business model pour la recherche","F"],["Formation Pitch et levée de fonds","F"],
+    ["Séminaire Partenariats public-privé","F"],["Accompagnement commercialisation","S"],
+  ]},
+  { name: "Incubateur de projets de recherche X-TechLab", desc: "Incubation de projets issus de la recherche pour les transformer en solutions viables", dept: "departement-recherche-x-techlab", svc: "sciti-recherche-experimentation", acts: [
+    ["Formation De la recherche au marché","F"],["Atelier Prototypage rapide","F"],
+    ["Cours Validation de marché","F"],["Formation Gestion de projet d'innovation","F"],
+    ["Workshop Présentation aux investisseurs","F"],["Mentorat de projet de recherche","S"],
   ]},
 ];
 
 // ── User definitions ─────────────────────────────────────────────────
 
-const adminDefs = [
-  { name: "Admin Programmes de Formation", email: "admin.formation@semecity.bj" },
-  { name: "Admin Programmes d'Incubation", email: "admin.incubation@semecity.bj" },
-  { name: "Admin Makerspace SCOP", email: "admin.makerspace@semecity.bj" },
-  { name: "Admin Valorisation Innovation", email: "admin.innovation@semecity.bj" },
-  { name: "Admin IMA Lingua", email: "admin.lingua@semecity.bj" },
-  { name: "Admin Career Center", email: "admin.career@semecity.bj" },
-  { name: "Admin Recrutement", email: "admin.recrutement@semecity.bj" },
+// 1 admin per department
+const adminDefs: { name: string; email: string; dept: string }[] = [
+  { name: "Admin Montage des Programmes", email: "admin.montage@semecity.bj", dept: "montage-des-programmes" },
+  { name: "Admin Valorisation des Innovations", email: "admin.valorisation@semecity.bj", dept: "valorisation-des-innovations" },
+  { name: "Admin Formation SCITI", email: "admin.formation-sciti@semecity.bj", dept: "departement-formation" },
+  { name: "Admin Recherche X-TechLab", email: "admin.recherche@semecity.bj", dept: "departement-recherche-x-techlab" },
 ];
 
-const respDefs: { name: string; email: string; svc: SvcKey }[] = [
-  { name: "Responsable Programmes de Formation", email: "resp.formation@semecity.bj", svc: "programmes-formation" },
-  { name: "Responsable Programmes d'Incubation", email: "resp.incubation@semecity.bj", svc: "programmes-incubation" },
-  { name: "Responsable Makerspace SCOP", email: "resp.makerspace@semecity.bj", svc: "makerspace-scop" },
-  { name: "Responsable Valorisation Innovation", email: "resp.innovation@semecity.bj", svc: "valorisation-innovation" },
-  { name: "Responsable IMA Lingua", email: "resp.lingua@semecity.bj", svc: "ima-lingua" },
-  { name: "Responsable Career Center", email: "resp.career@semecity.bj", svc: "career-center" },
-  { name: "Responsable Recrutement", email: "resp.recrutement@semecity.bj", svc: "recrutement-mobilite" },
+// 1 responsable per service (18 services)
+const respDefs: { name: string; email: string; svc: string }[] = [
+  // ADSC / Montage
+  { name: "Responsable Formation (Montage)", email: "resp.montage-formation@semecity.bj", svc: "adsc-montage-formation" },
+  { name: "Responsable Opération (Montage)", email: "resp.montage-operation@semecity.bj", svc: "adsc-montage-operation" },
+  { name: "Responsable Montage et Validation", email: "resp.montage-validation@semecity.bj", svc: "adsc-montage-validation" },
+  { name: "Responsable Bibliothèque", email: "resp.bibliotheque@semecity.bj", svc: "adsc-montage-bibliotheque" },
+  { name: "Responsable IMA Lingua", email: "resp.ima-lingua@semecity.bj", svc: "adsc-montage-ima-lingua" },
+  { name: "Responsable Career Center", email: "resp.career-center@semecity.bj", svc: "adsc-montage-career-center" },
+  { name: "Responsable Recrutement Accueil et Mobilité", email: "resp.recrutement@semecity.bj", svc: "adsc-montage-recrutement" },
+  { name: "Responsable Incubation (Montage)", email: "resp.montage-incubation@semecity.bj", svc: "adsc-montage-incubation" },
+  // ADSC / Valorisation
+  { name: "Responsable Opération (Valorisation)", email: "resp.valorisation-operation@semecity.bj", svc: "adsc-valorisation-operation" },
+  { name: "Responsable Formation (Valorisation)", email: "resp.valorisation-formation@semecity.bj", svc: "adsc-valorisation-formation" },
+  { name: "Responsable Incubation (Valorisation)", email: "resp.valorisation-incubation@semecity.bj", svc: "adsc-valorisation-incubation" },
+  { name: "Responsable Développement de Solutions", email: "resp.dev-solutions@semecity.bj", svc: "adsc-valorisation-dev-solutions" },
+  { name: "Responsable TechIMA", email: "resp.techima@semecity.bj", svc: "adsc-valorisation-techima" },
+  // SCITI / Formation
+  { name: "Responsable Inscription", email: "resp.inscription@semecity.bj", svc: "sciti-formation-inscription" },
+  { name: "Responsable Admission", email: "resp.admission@semecity.bj", svc: "sciti-formation-admission" },
+  // SCITI / Recherche
+  { name: "Responsable Appui à l'Expérimentation", email: "resp.experimentation@semecity.bj", svc: "sciti-recherche-experimentation" },
+  { name: "Responsable Commercialisation", email: "resp.commercialisation@semecity.bj", svc: "sciti-recherche-commercialisation" },
 ];
 
-const intervenantDefs: { name: string; email: string; svc: SvcKey }[] = [
-  // Training (3)
-  { name: "Dr. Serge AKAKPO", email: "serge.a@semecity.bj", svc: "programmes-formation" },
-  { name: "Mme. Amara LAWANI", email: "amara.l@semecity.bj", svc: "programmes-formation" },
-  { name: "M. Edmond CHABI", email: "edmond.c@semecity.bj", svc: "programmes-formation" },
-  // Incubation (2)
-  { name: "M. Yves HOUESSOU", email: "yves.h@semecity.bj", svc: "programmes-incubation" },
-  { name: "Mme. Flora OSSENI", email: "flora.o@semecity.bj", svc: "programmes-incubation" },
-  // Makerspace (2)
-  { name: "M. Bruno ELEGBE", email: "bruno.e@semecity.bj", svc: "makerspace-scop" },
-  { name: "Mme. Simone FAGNON", email: "simone.f@semecity.bj", svc: "makerspace-scop" },
-  // Innovation (2)
-  { name: "Dr. Patrice GBAGUIDI", email: "patrice.g@semecity.bj", svc: "valorisation-innovation" },
-  { name: "Mme. Diane MONTCHO", email: "diane.m@semecity.bj", svc: "valorisation-innovation" },
-  // IMA Lingua (2)
-  { name: "Dr. Aristide HOUNKPATIN", email: "aristide.h@semecity.bj", svc: "ima-lingua" },
-  { name: "Mme. Chantal DOSSOU", email: "chantal.d@semecity.bj", svc: "ima-lingua" },
-  // Career Center (2)
-  { name: "M. Fabrice ADJOVI", email: "fabrice.a@semecity.bj", svc: "career-center" },
-  { name: "Mme. Irene BANKOLE", email: "irene.b@semecity.bj", svc: "career-center" },
-  // Recrutement (2)
-  { name: "M. Koffi MENSAH", email: "koffi.m@semecity.bj", svc: "recrutement-mobilite" },
-  { name: "Mme. Nadege QUENUM", email: "nadege.q@semecity.bj", svc: "recrutement-mobilite" },
+// 2 intervenants per department
+const intervenantDefs: { name: string; email: string; dept: string }[] = [
+  // ADSC / Montage
+  { name: "Dr. Serge AKAKPO", email: "serge.a@semecity.bj", dept: "montage-des-programmes" },
+  { name: "Mme. Amara LAWANI", email: "amara.l@semecity.bj", dept: "montage-des-programmes" },
+  // ADSC / Valorisation
+  { name: "Dr. Patrice GBAGUIDI", email: "patrice.g@semecity.bj", dept: "valorisation-des-innovations" },
+  { name: "Mme. Diane MONTCHO", email: "diane.m@semecity.bj", dept: "valorisation-des-innovations" },
+  // SCITI / Formation
+  { name: "Dr. Aristide HOUNKPATIN", email: "aristide.h@semecity.bj", dept: "departement-formation" },
+  { name: "Mme. Chantal DOSSOU", email: "chantal.d@semecity.bj", dept: "departement-formation" },
+  // SCITI / Recherche
+  { name: "M. Fabrice ADJOVI", email: "fabrice.a@semecity.bj", dept: "departement-recherche-x-techlab" },
+  { name: "Mme. Irene BANKOLE", email: "irene.b@semecity.bj", dept: "departement-recherche-x-techlab" },
 ];
 
 // ── Main seed ────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("Cleaning existing activity data...");
+  console.log("Cleaning existing data...");
   await prisma.feedback.deleteMany();
   await prisma.attendance.deleteMany();
   await prisma.activitySession.deleteMany();
   await prisma.registration.deleteMany();
   await prisma.activity.deleteMany();
   await prisma.program.deleteMany();
+  await prisma.userService.deleteMany();
+  await prisma.invitation.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.service.deleteMany();
+  await prisma.department.deleteMany();
+  await prisma.organization.deleteMany();
 
   const hashedPassword = await bcrypt.hash("password123", 12);
 
-  // ── Services ──
-  console.log("Creating services...");
-  const serviceMap: Record<SvcKey, string> = {} as any;
-  for (const sd of serviceDefs) {
-    const svc = await prisma.service.upsert({
-      where: { slug: sd.slug },
-      update: {},
-      create: { name: sd.name, slug: sd.slug, description: sd.description },
+  // ── Organizations & Departments & Services ──
+  console.log("Creating organizations, departments, services...");
+  const deptIdMap: Record<string, string> = {};
+  const svcIdMap: Record<string, string> = {};
+  const deptSvcIds: Record<string, string[]> = {};
+
+  for (const orgDef of orgDefs) {
+    const org = await prisma.organization.create({
+      data: { name: orgDef.name, slug: orgDef.slug, description: orgDef.description },
     });
-    serviceMap[sd.key] = svc.id;
+
+    for (const deptDef of orgDef.departments) {
+      const dept = await prisma.department.create({
+        data: {
+          name: deptDef.name,
+          slug: deptDef.slug,
+          description: deptDef.description,
+          organizationId: org.id,
+        },
+      });
+      deptIdMap[deptDef.slug] = dept.id;
+      deptSvcIds[deptDef.slug] = [];
+
+      for (const svcDef of deptDef.services) {
+        const svc = await prisma.service.create({
+          data: {
+            name: svcDef.name,
+            slug: svcDef.slug,
+            description: svcDef.description,
+            departmentId: dept.id,
+          },
+        });
+        svcIdMap[svcDef.slug] = svc.id;
+        deptSvcIds[deptDef.slug].push(svc.id);
+      }
+    }
   }
 
   // ── Users ──
   console.log("Creating users...");
 
   // Super admin
-  await prisma.user.upsert({
-    where: { email: "superadmin@semecity.bj" },
-    update: { password: hashedPassword, emailVerified: new Date() },
-    create: { name: "Super Administrateur", email: "superadmin@semecity.bj", password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() },
+  await prisma.user.create({
+    data: { name: "Super Administrateur", email: "superadmin@semecity.bj", password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() },
   });
 
-  // Admins
+  // Admins (1 per department)
   for (const a of adminDefs) {
-    await prisma.user.upsert({
-      where: { email: a.email },
-      update: { password: hashedPassword, emailVerified: new Date() },
-      create: { ...a, password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() },
+    await prisma.user.create({
+      data: { name: a.name, email: a.email, password: hashedPassword, role: Role.ADMIN, emailVerified: new Date() },
     });
   }
 
-  // Responsables
-  const respUsers: { id: string; svcId: string }[] = [];
+  // Responsables (1 per service, with UserService link)
+  const respUsers: { id: string; svcId: string; deptSlug: string }[] = [];
   for (const r of respDefs) {
-    const svcId = serviceMap[r.svc];
-    const u = await prisma.user.upsert({
-      where: { email: r.email },
-      update: { password: hashedPassword, emailVerified: new Date() },
-      create: { name: r.name, email: r.email, password: hashedPassword, role: Role.RESPONSABLE_SERVICE, emailVerified: new Date() },
+    const svcId = svcIdMap[r.svc];
+    const u = await prisma.user.create({
+      data: { name: r.name, email: r.email, password: hashedPassword, role: Role.RESPONSABLE_SERVICE, emailVerified: new Date() },
     });
-    await prisma.userService.upsert({
-      where: { userId_serviceId: { userId: u.id, serviceId: svcId } },
-      update: {},
-      create: { userId: u.id, serviceId: svcId },
+    await prisma.userService.create({
+      data: { userId: u.id, serviceId: svcId },
     });
-    respUsers.push({ id: u.id, svcId });
+    // Find the dept slug for this service
+    const deptSlug = Object.entries(deptSvcIds).find(([, ids]) => ids.includes(svcId))?.[0] || "";
+    respUsers.push({ id: u.id, svcId, deptSlug });
   }
 
-  // Intervenants
-  const intervenantsBySvc: Record<string, string[]> = {};
+  // Intervenants (2 per department, with UserService for all services in dept)
+  const intervenantsByDept: Record<string, string[]> = {};
   for (const i of intervenantDefs) {
-    const svcId = serviceMap[i.svc];
-    const u = await prisma.user.upsert({
-      where: { email: i.email },
-      update: { password: hashedPassword, emailVerified: new Date() },
-      create: { name: i.name, email: i.email, password: hashedPassword, role: Role.INTERVENANT, emailVerified: new Date() },
+    const u = await prisma.user.create({
+      data: { name: i.name, email: i.email, password: hashedPassword, role: Role.INTERVENANT, emailVerified: new Date() },
     });
-    await prisma.userService.upsert({
-      where: { userId_serviceId: { userId: u.id, serviceId: svcId } },
-      update: {},
-      create: { userId: u.id, serviceId: svcId },
-    });
-    if (!intervenantsBySvc[svcId]) intervenantsBySvc[svcId] = [];
-    intervenantsBySvc[svcId].push(u.id);
+    // Link to all services in their department
+    const svcIds = deptSvcIds[i.dept] || [];
+    for (const svcId of svcIds) {
+      await prisma.userService.create({
+        data: { userId: u.id, serviceId: svcId },
+      });
+    }
+    if (!intervenantsByDept[i.dept]) intervenantsByDept[i.dept] = [];
+    intervenantsByDept[i.dept].push(u.id);
   }
 
   // ── Participant pool ──
@@ -530,7 +683,12 @@ async function main() {
   const programMap: Record<string, string> = {};
   for (const pd of programDefs) {
     const prog = await prisma.program.create({
-      data: { name: pd.name, description: pd.desc, serviceId: serviceMap[pd.svc] },
+      data: {
+        name: pd.name,
+        description: pd.desc,
+        departmentId: deptIdMap[pd.dept],
+        serviceId: pd.svc ? svcIdMap[pd.svc] : null,
+      },
     });
     programMap[pd.name] = prog.id;
   }
@@ -547,10 +705,16 @@ async function main() {
   let totalFeedbacks = 0;
 
   for (const pd of programDefs) {
-    const serviceId = serviceMap[pd.svc];
-    const intervenants = intervenantsBySvc[serviceId] || [];
-    const resp = respUsers.find((r) => r.svcId === serviceId)!;
-    const locs = LOCATIONS[pd.svc];
+    const deptSlug = pd.dept;
+    const serviceId = pd.svc ? svcIdMap[pd.svc] : null;
+    const intervenants = intervenantsByDept[deptSlug] || [];
+    // Find a responsable for this service (or first in dept)
+    const resp = serviceId
+      ? respUsers.find((r) => r.svcId === serviceId) || respUsers.find((r) => r.deptSlug === deptSlug)
+      : respUsers.find((r) => r.deptSlug === deptSlug);
+    if (!resp) { console.warn(`No resp for program ${pd.name}`); continue; }
+
+    const locs = LOCATIONS[deptSlug] || ["Sèmè City"];
     const programId = programMap[pd.name];
 
     const attendanceBatch: { firstName: string; lastName: string; email: string; phone: string | null; organization: string | null; activityId: string; sessionId: string; createdAt: Date }[] = [];
@@ -595,21 +759,25 @@ async function main() {
       totalActivities++;
 
       // ── Sessions ──
-      const timeVariations = ["08:00", "08:30", "09:00", "09:30", "10:00"];
-      const endTimeVariations = ["16:00", "16:30", "17:00", "17:30", "18:00"];
+      const timeSlots: [string, string][] = [
+        ["08:00", "12:00"], ["08:30", "12:30"], ["09:00", "13:00"],
+        ["14:00", "17:00"], ["14:00", "18:00"], ["14:30", "17:30"],
+        ["08:00", "17:00"], ["09:00", "16:00"],
+      ];
       const sessions: { id: string; date: Date }[] = [];
 
       for (let s = 0; s < sessionCount; s++) {
         const sessionDate = new Date(activityDate.getTime() + s * 7 * 86400000);
-        const sTime = randomChoice(timeVariations);
-        const eTime = randomChoice(endTimeVariations);
+        const [sTime, eTime] = randomChoice(timeSlots);
+        const duration = calcDurationMinutes(sTime, eTime);
         const session = await prisma.activitySession.create({
           data: {
-            title: isFormation ? `Seance ${s + 1}` : (sessionCount > 1 ? `Session ${s + 1}` : null),
+            title: isFormation ? `Séance ${s + 1}` : (sessionCount > 1 ? `Session ${s + 1}` : null),
             startDate: sessionDate,
             endDate: sessionDate,
             startTime: sTime,
             endTime: eTime,
+            durationMinutes: duration,
             location,
             intervenantId,
             activityId: activity.id,
@@ -730,7 +898,9 @@ async function main() {
   }
 
   console.log("\n=== Seed completed! ===");
-  console.log(`  Services: ${serviceDefs.length}`);
+  console.log(`  Organizations: ${orgDefs.length}`);
+  console.log(`  Departments: ${Object.keys(deptIdMap).length}`);
+  console.log(`  Services: ${Object.keys(svcIdMap).length}`);
   console.log(`  Users: ${1 + adminDefs.length + respDefs.length + intervenantDefs.length}`);
   console.log(`  Programs: ${programDefs.length}`);
   console.log(`  Activities: ${totalActivities}`);

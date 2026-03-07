@@ -19,7 +19,7 @@ describe("GET /api/dashboard/stats", () => {
   it("admin should see all stats", async () => {
     mockAuthUser(users.admin);
 
-    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
     await prisma.attendance.create({
       data: {
         firstName: "A",
@@ -46,8 +46,8 @@ describe("GET /api/dashboard/stats", () => {
     mockAuthUser(users.admin);
 
     // Create activities in both services
-    const a1 = await createFormationActivity(prisma, users.service.id, users.admin.id);
-    const a2 = await createFormationActivity(prisma, users.service2.id, users.admin.id, {
+    const a1 = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+    const a2 = await createFormationActivity(prisma, users.service2.id, users.admin.id, users.program2.id, {
       title: "Formation Autre Service",
     });
 
@@ -99,8 +99,8 @@ describe("GET /api/dashboard/stats", () => {
     it("admin with serviceId should get stats filtered for that service only", async () => {
       mockAuthUser(users.admin);
 
-      const a1 = await createFormationActivity(prisma, users.service.id, users.admin.id);
-      const a2 = await createFormationActivity(prisma, users.service2.id, users.admin.id, {
+      const a1 = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+      const a2 = await createFormationActivity(prisma, users.service2.id, users.admin.id, users.program2.id, {
         title: "Formation Autre",
       });
 
@@ -124,7 +124,7 @@ describe("GET /api/dashboard/stats", () => {
 
     it("responsable with valid serviceId should get filtered stats", async () => {
       mockAuthUser(users.admin);
-      await createFormationActivity(prisma, users.service.id, users.admin.id);
+      await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
 
       mockAuthUser(users.responsable);
       const res = await GET(statsRequest({ serviceId: users.service.id }));
