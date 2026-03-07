@@ -35,8 +35,6 @@ export function ProgramFilter() {
     fetchPrograms();
   }, []);
 
-  if (programs.length === 0) return null;
-
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (value === "all") {
