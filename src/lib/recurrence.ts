@@ -1,4 +1,4 @@
-import { addDays, addWeeks, addMonths, getDay, setDay, startOfWeek, isBefore, isEqual } from "date-fns";
+import { addDays, addWeeks, addMonths, getDay, setDay, startOfDay, startOfWeek, isBefore, isEqual } from "date-fns";
 
 export type RecurrenceConfig = {
   interval: number;
@@ -29,12 +29,17 @@ export function generateSessions(
   startTime: string,
   endTime: string
 ): GeneratedSession[] {
+  // Normalize all dates to local midnight to avoid UTC vs local timezone mismatches
+  // (new Date("2026-03-10") → UTC midnight, but date-fns functions use local time)
+  startDate = startOfDay(startDate);
+  activityEndDate = startOfDay(activityEndDate);
+
   if (activityEndDate < startDate) return [];
 
   // Determine the effective end date based on endType
   let effectiveEndDate = activityEndDate;
   if (config.endType === "on_date" && config.endDate) {
-    const recurrenceEnd = new Date(config.endDate);
+    const recurrenceEnd = startOfDay(new Date(config.endDate));
     if (recurrenceEnd < effectiveEndDate) {
       effectiveEndDate = recurrenceEnd;
     }
