@@ -10,12 +10,23 @@ import { Loader2, Eye, EyeOff, ArrowRight, Shield } from "lucide-react";
 
 const demoAccounts = [
   { email: "superadmin@semecity.bj", role: "Super Admin" },
+  { email: "admin.formation@semecity.bj", role: "Admin" },
+  { email: "admin.incubation@semecity.bj", role: "Admin" },
+  { email: "admin.makerspace@semecity.bj", role: "Admin" },
+  { email: "admin.innovation@semecity.bj", role: "Admin" },
   { email: "admin.lingua@semecity.bj", role: "Admin" },
   { email: "admin.career@semecity.bj", role: "Admin" },
   { email: "admin.recrutement@semecity.bj", role: "Admin" },
+  { email: "resp.formation@semecity.bj", role: "Responsable" },
+  { email: "resp.incubation@semecity.bj", role: "Responsable" },
+  { email: "resp.makerspace@semecity.bj", role: "Responsable" },
+  { email: "resp.innovation@semecity.bj", role: "Responsable" },
   { email: "resp.lingua@semecity.bj", role: "Responsable" },
   { email: "resp.career@semecity.bj", role: "Responsable" },
   { email: "resp.recrutement@semecity.bj", role: "Responsable" },
+  { email: "serge.a@semecity.bj", role: "Intervenant" },
+  { email: "amara.l@semecity.bj", role: "Intervenant" },
+  { email: "fabrice.a@semecity.bj", role: "Intervenant" },
 ];
 
 function LoginForm() {

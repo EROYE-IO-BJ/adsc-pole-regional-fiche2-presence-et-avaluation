@@ -3,15 +3,19 @@ import Link from "next/link";
 const demoAccounts = [
   {
     role: "Super Administrateur",
-    description: "Vision globale sur tous les services",
+    description: "Vision globale sur tous les services et départements",
     accounts: [
       { name: "Super Admin", email: "superadmin@semecity.bj" },
     ],
   },
   {
     role: "Administrateur",
-    description: "Accès complet à toutes les fonctionnalités",
+    description: "Accès complet aux fonctionnalités de son service",
     accounts: [
+      { name: "Admin Formation", email: "admin.formation@semecity.bj" },
+      { name: "Admin Incubation", email: "admin.incubation@semecity.bj" },
+      { name: "Admin Makerspace", email: "admin.makerspace@semecity.bj" },
+      { name: "Admin Innovation", email: "admin.innovation@semecity.bj" },
       { name: "Admin IMA Lingua", email: "admin.lingua@semecity.bj" },
       { name: "Admin Career Center", email: "admin.career@semecity.bj" },
       { name: "Admin Recrutement", email: "admin.recrutement@semecity.bj" },
@@ -21,9 +25,22 @@ const demoAccounts = [
     role: "Responsable de service",
     description: "Gestion des activités de son service",
     accounts: [
+      { name: "Resp. Formation", email: "resp.formation@semecity.bj" },
+      { name: "Resp. Incubation", email: "resp.incubation@semecity.bj" },
+      { name: "Resp. Makerspace", email: "resp.makerspace@semecity.bj" },
+      { name: "Resp. Innovation", email: "resp.innovation@semecity.bj" },
       { name: "Resp. IMA Lingua", email: "resp.lingua@semecity.bj" },
       { name: "Resp. Career Center", email: "resp.career@semecity.bj" },
       { name: "Resp. Recrutement", email: "resp.recrutement@semecity.bj" },
+    ],
+  },
+  {
+    role: "Intervenant",
+    description: "Consultation des activités assignées",
+    accounts: [
+      { name: "Dr. Serge AKAKPO", email: "serge.a@semecity.bj" },
+      { name: "Mme. Amara LAWANI", email: "amara.l@semecity.bj" },
+      { name: "M. Fabrice ADJOVI", email: "fabrice.a@semecity.bj" },
     ],
   },
 ];
@@ -31,8 +48,8 @@ const demoAccounts = [
 export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#14355A] to-[#7DD3D0] p-4">
-      <div className="w-full max-w-2xl space-y-8">
-        <div className="text-center space-y-6">
+      <div className="w-full max-w-3xl space-y-8">
+        <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-white">Sèmè City</h1>
           <p className="text-lg text-white/80 max-w-md mx-auto">
             Plateforme de collecte de présences et feedbacks pour les activités
@@ -57,10 +74,9 @@ export default function Home() {
           <h2 className="text-lg font-semibold text-white text-center">
             Comptes de démonstration
           </h2>
-          <p className="text-sm text-white/60 text-center">
-            Format : <span className="text-white/80">email</span>{" "}
-            <span className="text-white/40">|</span>{" "}
-            <span className="text-white/80">mot de passe</span>
+          <p className="text-sm text-white/70 text-center">
+            Mot de passe pour tous les comptes :{" "}
+            <span className="font-bold text-white">password123</span>
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -82,7 +98,7 @@ export default function Home() {
                         {account.name}
                       </span>
                       <Link
-                        href={`/connexion`}
+                        href="/connexion"
                         className="inline-block text-xs font-mono text-white/90 hover:text-white underline underline-offset-2 break-all"
                       >
                         {account.email}
