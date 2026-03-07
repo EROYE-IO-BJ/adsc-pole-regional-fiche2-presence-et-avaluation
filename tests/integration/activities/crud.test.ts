@@ -46,6 +46,7 @@ describe("POST /api/activites", () => {
         endDate: "2025-08-01",
         type: "SERVICE",
         serviceId: users.service.id,
+        programId: users.program.id,
       },
     });
 
