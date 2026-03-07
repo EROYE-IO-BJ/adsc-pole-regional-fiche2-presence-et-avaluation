@@ -108,7 +108,19 @@ export async function POST(request: NextRequest) {
   // Build session creation data based on frequency
   let sessionsData: any[];
 
-  if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(sessionFrequency) && recurrenceConfig && startTime && endTime) {
+  // If wizard provides pre-edited sessions, use them directly
+  if (validation.data.sessions && validation.data.sessions.length > 0) {
+    sessionsData = validation.data.sessions.map((s: any, i: number) => ({
+      title: s.title,
+      description: s.description || null,
+      startDate: new Date(s.date),
+      startTime: s.startTime || null,
+      endTime: s.endTime || null,
+      location: validation.data.location || null,
+      intervenantId: validation.data.intervenantId || null,
+      isDefault: i === 0,
+    }));
+  } else if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(sessionFrequency) && recurrenceConfig && startTime && endTime) {
     // For presets (DAILY/WEEKLY/MONTHLY), use presetConfig; for CUSTOM, use provided config
     const config: RecurrenceConfig = ["DAILY", "WEEKLY", "MONTHLY"].includes(sessionFrequency)
       ? presetConfig(sessionFrequency as "DAILY" | "WEEKLY" | "MONTHLY", startDate)

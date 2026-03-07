@@ -10,6 +10,10 @@ export const recurrenceConfigSchema = z
     endType: z.enum(["never", "on_date", "after_count"]),
     endDate: z.string().optional(),
     endCount: z.number().int().min(1).max(365).optional(),
+    dayTimeSlots: z.record(z.string(), z.object({
+      startTime: z.string().regex(timeRegex),
+      endTime: z.string().regex(timeRegex),
+    })).optional(),
   })
   .refine(
     (data) => {
@@ -42,6 +46,14 @@ const sessionFrequencyEnum = z.enum([
   "CUSTOM",
 ]);
 
+const sessionItemSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  date: z.string(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+});
+
 const activityBaseSchema = z.object({
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
   description: z.string().optional(),
@@ -57,6 +69,7 @@ const activityBaseSchema = z.object({
   recurrenceConfig: recurrenceConfigSchema.optional(),
   startTime: z.string().regex(timeRegex, "Format HH:mm requis").optional(),
   endTime: z.string().regex(timeRegex, "Format HH:mm requis").optional(),
+  sessions: z.array(sessionItemSchema).max(100).optional(),
 });
 
 export const createActivitySchema = activityBaseSchema
@@ -85,6 +98,10 @@ export const createActivitySchema = activityBaseSchema
   .refine(
     (data) => {
       if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(data.sessionFrequency)) {
+        // If per-day slots are provided, global times are not required
+        const hasDaySlots = data.recurrenceConfig?.dayTimeSlots &&
+          Object.keys(data.recurrenceConfig.dayTimeSlots).length > 0;
+        if (hasDaySlots) return true;
         return data.startTime !== undefined && data.startTime.length > 0;
       }
       return true;
@@ -94,6 +111,9 @@ export const createActivitySchema = activityBaseSchema
   .refine(
     (data) => {
       if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(data.sessionFrequency)) {
+        const hasDaySlots = data.recurrenceConfig?.dayTimeSlots &&
+          Object.keys(data.recurrenceConfig.dayTimeSlots).length > 0;
+        if (hasDaySlots) return true;
         return data.endTime !== undefined && data.endTime.length > 0;
       }
       return true;
@@ -108,6 +128,14 @@ export const createActivitySchema = activityBaseSchema
       return true;
     },
     { message: "L'heure de fin doit être après l'heure de début", path: ["endTime"] }
+  )
+  .refine(
+    (data) => {
+      // If wizard provides pre-edited sessions, skip generation validation
+      if (data.sessions && data.sessions.length > 0) return true;
+      return true;
+    },
+    { message: "Données invalides" }
   );
 
 export const updateActivitySchema = activityBaseSchema.partial().refine(
@@ -119,6 +147,24 @@ export const updateActivitySchema = activityBaseSchema.partial().refine(
   },
   { message: "La date de fin doit être après la date de début", path: ["endDate"] }
 );
+
+// Step-level validation schemas for wizard client-side validation
+export const step0Schema = z.object({
+  title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
+  startDate: z.string().min(1, "La date de début est requise"),
+  endDate: z.string().min(1, "La date de fin est requise"),
+  programId: z.string().min(1, "Le programme est requis"),
+}).refine(
+  (data) => new Date(data.endDate) >= new Date(data.startDate),
+  { message: "La date de fin doit être après la date de début", path: ["endDate"] }
+);
+
+export const step1Schema = z.object({
+  sessionFrequency: sessionFrequencyEnum,
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  recurrenceConfig: recurrenceConfigSchema.optional(),
+});
 
 export type CreateActivityInput = z.infer<typeof createActivitySchema>;
 export type UpdateActivityInput = z.infer<typeof updateActivitySchema>;

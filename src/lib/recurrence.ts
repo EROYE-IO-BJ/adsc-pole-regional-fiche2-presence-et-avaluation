@@ -7,6 +7,7 @@ export type RecurrenceConfig = {
   endType: "never" | "on_date" | "after_count";
   endDate?: string;
   endCount?: number;
+  dayTimeSlots?: Record<number, { startTime: string; endTime: string }>;
 };
 
 export type GeneratedSession = {
@@ -16,7 +17,7 @@ export type GeneratedSession = {
   endTime: string;
 };
 
-const MAX_SESSIONS = 365;
+const MAX_SESSIONS = 100;
 
 /**
  * Generate sessions based on recurrence configuration (Google Calendar style).
@@ -51,6 +52,14 @@ export function generateSessions(
 
   const sessions: GeneratedSession[] = [];
 
+  // Helper to resolve per-day time slots
+  function getSlot(dayOfWeek: number): { st: string; et: string } {
+    if (config.dayTimeSlots && config.dayTimeSlots[dayOfWeek]) {
+      return { st: config.dayTimeSlots[dayOfWeek].startTime, et: config.dayTimeSlots[dayOfWeek].endTime };
+    }
+    return { st: startTime, et: endTime };
+  }
+
   if (config.unit === "day") {
     let current = startDate;
     while (
@@ -58,11 +67,12 @@ export function generateSessions(
       sessions.length < maxCount &&
       sessions.length < MAX_SESSIONS
     ) {
+      const { st, et } = getSlot(getDay(current));
       sessions.push({
         title: `Séance ${sessions.length + 1}`,
         date: new Date(current),
-        startTime,
-        endTime,
+        startTime: st,
+        endTime: et,
       });
       current = addDays(current, config.interval);
     }
@@ -87,11 +97,12 @@ export function generateSessions(
         // Stop if past effective end date
         if (!isBefore(candidate, effectiveEndDate) && !isEqual(candidate, effectiveEndDate)) continue;
 
+        const { st, et } = getSlot(dayOfWeek);
         sessions.push({
           title: `Séance ${sessions.length + 1}`,
           date: new Date(candidate),
-          startTime,
-          endTime,
+          startTime: st,
+          endTime: et,
         });
       }
 
@@ -111,11 +122,12 @@ export function generateSessions(
       sessions.length < maxCount &&
       sessions.length < MAX_SESSIONS
     ) {
+      const { st, et } = getSlot(getDay(current));
       sessions.push({
         title: `Séance ${sessions.length + 1}`,
         date: new Date(current),
-        startTime,
-        endTime,
+        startTime: st,
+        endTime: et,
       });
       current = addMonths(current, config.interval);
     }

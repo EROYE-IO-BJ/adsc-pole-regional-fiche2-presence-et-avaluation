@@ -29,6 +29,8 @@ interface RecurrenceConfigProps {
   onEndTimeChange: (t: string) => void;
   startDate: string;
   endDate: string;
+  usePerDaySlots?: boolean;
+  onUsePerDaySlotsChange?: (v: boolean) => void;
 }
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
@@ -85,6 +87,8 @@ export function RecurrenceConfigComponent({
   onEndTimeChange,
   startDate,
   endDate,
+  usePerDaySlots = false,
+  onUsePerDaySlotsChange,
 }: RecurrenceConfigProps) {
   const frequencyOptions = useMemo(() => getFrequencyOptions(startDate), [startDate]);
 
@@ -106,19 +110,23 @@ export function RecurrenceConfigComponent({
   const preview = useMemo(() => {
     if (!isRecurrent) return null;
     if (!startDate || !endDate) return null;
-    if (!startTime || !endTime) return null;
+
+    // If using per-day slots, we don't need global startTime/endTime
+    const hasDaySlots = usePerDaySlots && recurrenceConfig.dayTimeSlots &&
+      Object.keys(recurrenceConfig.dayTimeSlots).length > 0;
+    if (!hasDaySlots && (!startTime || !endTime)) return null;
 
     try {
       const config: RecurrenceConfig =
         frequency === "CUSTOM"
           ? recurrenceConfig
-          : presetConfig(frequency as "DAILY" | "WEEKLY" | "MONTHLY", new Date(startDate));
+          : { ...presetConfig(frequency as "DAILY" | "WEEKLY" | "MONTHLY", new Date(startDate)), dayTimeSlots: recurrenceConfig.dayTimeSlots };
 
-      return generateSessions(new Date(startDate), new Date(endDate), config, startTime, endTime);
+      return generateSessions(new Date(startDate), new Date(endDate), config, startTime || "00:00", endTime || "23:59");
     } catch {
       return null;
     }
-  }, [frequency, startDate, endDate, startTime, endTime, recurrenceConfig, isRecurrent]);
+  }, [frequency, startDate, endDate, startTime, endTime, recurrenceConfig, isRecurrent, usePerDaySlots]);
 
   return (
     <div className="space-y-4">
@@ -143,7 +151,7 @@ export function RecurrenceConfigComponent({
       </div>
 
       {/* Time slot — shown for all recurrent frequencies */}
-      {isRecurrent && (
+      {isRecurrent && !usePerDaySlots && (
         <div className="space-y-2">
           <Label>Créneau horaire</Label>
           <div className="flex items-center gap-3">
@@ -153,7 +161,7 @@ export function RecurrenceConfigComponent({
               value={startTime}
               onChange={(e) => onStartTimeChange(e.target.value)}
             />
-            <span className="text-muted-foreground">→</span>
+            <span className="text-muted-foreground">&rarr;</span>
             <Input
               type="time"
               className="w-36"
@@ -161,6 +169,76 @@ export function RecurrenceConfigComponent({
               onChange={(e) => onEndTimeChange(e.target.value)}
             />
           </div>
+        </div>
+      )}
+
+      {/* Per-day time slots toggle */}
+      {isRecurrent && onUsePerDaySlotsChange && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <input
+              id="perDaySlots"
+              type="checkbox"
+              checked={usePerDaySlots}
+              onChange={(e) => onUsePerDaySlotsChange(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="perDaySlots" className="cursor-pointer font-normal">
+              Horaires différents par jour
+            </Label>
+          </div>
+
+          {usePerDaySlots && (() => {
+            // Determine which days to show based on frequency/config
+            const activeDays: number[] =
+              frequency === "CUSTOM" && recurrenceConfig.unit === "week" && recurrenceConfig.daysOfWeek
+                ? [...recurrenceConfig.daysOfWeek].sort((a, b) => a - b)
+                : frequency === "WEEKLY" && startDate
+                  ? [getDay(new Date(startDate))]
+                  : WEEK_DAYS_ORDERED;
+
+            return (
+              <div className="space-y-2 rounded-md border p-3 bg-muted/30">
+                {activeDays.map((day) => {
+                  const slot = recurrenceConfig.dayTimeSlots?.[day];
+                  return (
+                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-sm font-medium w-20">{DAY_LABELS_FULL[day]}</span>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="time"
+                          className="w-32"
+                          value={slot?.startTime ?? "09:00"}
+                          onChange={(e) => {
+                            const slots = { ...recurrenceConfig.dayTimeSlots };
+                            slots[day] = {
+                              startTime: e.target.value,
+                              endTime: slot?.endTime ?? "17:00",
+                            };
+                            updateConfig({ dayTimeSlots: slots });
+                          }}
+                        />
+                        <span className="text-muted-foreground">&rarr;</span>
+                        <Input
+                          type="time"
+                          className="w-32"
+                          value={slot?.endTime ?? "17:00"}
+                          onChange={(e) => {
+                            const slots = { ...recurrenceConfig.dayTimeSlots };
+                            slots[day] = {
+                              startTime: slot?.startTime ?? "09:00",
+                              endTime: e.target.value,
+                            };
+                            updateConfig({ dayTimeSlots: slots });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
