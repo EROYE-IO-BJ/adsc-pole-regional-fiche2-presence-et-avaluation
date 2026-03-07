@@ -19,7 +19,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { RecurrenceConfigComponent } from "@/components/activites/recurrence-config";
-import type { DaySchedule } from "@/lib/recurrence";
+import type { RecurrenceConfig } from "@/lib/recurrence";
 
 type Intervenant = {
   id: string;
@@ -48,8 +48,15 @@ export default function NewActivityPage() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [requiresRegistration, setRequiresRegistration] = useState(false);
   const [activityType, setActivityType] = useState<"FORMATION" | "SERVICE">("FORMATION");
-  const [sessionFrequency, setSessionFrequency] = useState<"UNIQUE" | "DAILY" | "WEEKLY" | "MONTHLY" | "CONFIGURABLE">("UNIQUE");
-  const [daySchedule, setDaySchedule] = useState<DaySchedule>({});
+  const [sessionFrequency, setSessionFrequency] = useState<"UNIQUE" | "DAILY" | "WEEKLY" | "MONTHLY" | "CONFIGURABLE" | "CUSTOM">("UNIQUE");
+  const [recurrenceConfig, setRecurrenceConfig] = useState<RecurrenceConfig>({
+    interval: 1,
+    unit: "week",
+    daysOfWeek: [1],
+    endType: "never",
+  });
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("17:00");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -88,11 +95,10 @@ export default function NewActivityPage() {
       sessionFrequency: activityType === "SERVICE" ? "UNIQUE" : sessionFrequency,
     };
 
-    if (["DAILY", "WEEKLY", "MONTHLY"].includes(sessionFrequency) && activityType !== "SERVICE") {
-      data.recurrenceConfig = {
-        mode: sessionFrequency,
-        daySchedule,
-      };
+    if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(sessionFrequency) && activityType !== "SERVICE") {
+      data.recurrenceConfig = recurrenceConfig;
+      data.startTime = startTime;
+      data.endTime = endTime;
     }
 
     if (isAdmin || isResponsable) {
@@ -212,8 +218,12 @@ export default function NewActivityPage() {
               <RecurrenceConfigComponent
                 frequency={sessionFrequency}
                 onFrequencyChange={setSessionFrequency}
-                daySchedule={daySchedule}
-                onDayScheduleChange={setDaySchedule}
+                recurrenceConfig={recurrenceConfig}
+                onRecurrenceConfigChange={setRecurrenceConfig}
+                startTime={startTime}
+                onStartTimeChange={setStartTime}
+                endTime={endTime}
+                onEndTimeChange={setEndTime}
                 startDate={startDate}
                 endDate={endDate}
               />

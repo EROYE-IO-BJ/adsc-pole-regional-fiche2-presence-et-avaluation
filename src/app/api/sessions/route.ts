@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
   const session = await prisma.activitySession.create({
     data: {
       title: validation.data.title || null,
+      description: validation.data.description || null,
       startDate: sessionStartDate,
       endDate: validation.data.endDate ? new Date(validation.data.endDate) : null,
       startTime: validation.data.startTime || null,

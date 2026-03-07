@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const createSessionSchema = z.object({
   title: z.string().optional(),
+  description: z.string().optional(),
   startDate: z.string().min(1, "La date de début est requise"),
   endDate: z.string().optional(),
   startTime: z.string().optional(),
@@ -21,6 +22,7 @@ export const createSessionSchema = z.object({
 
 export const updateSessionSchema = z.object({
   title: z.string().optional(),
+  description: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   startTime: z.string().optional(),

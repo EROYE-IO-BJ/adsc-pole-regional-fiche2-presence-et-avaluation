@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole, getUserServiceIds, userCanAccessService, handleAuthError } from "@/lib/authorization";
 import { createActivitySchema } from "@/lib/validations/activity";
-import { generateSessions } from "@/lib/recurrence";
+import { generateSessions, presetConfig } from "@/lib/recurrence";
 import { Role } from "@prisma/client";
 import type { RecurrenceConfig } from "@/lib/recurrence";
 
@@ -51,6 +51,17 @@ export async function GET() {
   return NextResponse.json(activities);
 }
 
+function formatValidationErrors(flatErrors: { fieldErrors: Record<string, string[]>; formErrors: string[] }): string {
+  const messages: string[] = [];
+  for (const [field, errors] of Object.entries(flatErrors.fieldErrors)) {
+    messages.push(`${field} : ${errors.join(", ")}`);
+  }
+  for (const err of flatErrors.formErrors) {
+    messages.push(err);
+  }
+  return messages.join(" | ") || "Données invalides";
+}
+
 // POST /api/activites - Create a new activity
 export async function POST(request: NextRequest) {
   let user;
@@ -65,8 +76,9 @@ export async function POST(request: NextRequest) {
   const validation = createActivitySchema.safeParse(body);
 
   if (!validation.success) {
+    const flat = validation.error.flatten();
     return NextResponse.json(
-      { error: "Données invalides", details: validation.error.flatten() },
+      { error: formatValidationErrors(flat), details: flat },
       { status: 400 }
     );
   }
@@ -91,13 +103,18 @@ export async function POST(request: NextRequest) {
 
   const startDate = new Date(validation.data.startDate);
   const endDate = new Date(validation.data.endDate);
-  const { sessionFrequency, recurrenceConfig } = validation.data;
+  const { sessionFrequency, recurrenceConfig, startTime, endTime } = validation.data;
 
   // Build session creation data based on frequency
   let sessionsData: any[];
 
-  if (["DAILY", "WEEKLY", "MONTHLY"].includes(sessionFrequency) && recurrenceConfig) {
-    const generated = generateSessions(startDate, endDate, recurrenceConfig as RecurrenceConfig);
+  if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(sessionFrequency) && recurrenceConfig && startTime && endTime) {
+    // For presets (DAILY/WEEKLY/MONTHLY), use presetConfig; for CUSTOM, use provided config
+    const config: RecurrenceConfig = ["DAILY", "WEEKLY", "MONTHLY"].includes(sessionFrequency)
+      ? presetConfig(sessionFrequency as "DAILY" | "WEEKLY" | "MONTHLY", startDate)
+      : recurrenceConfig as RecurrenceConfig;
+
+    const generated = generateSessions(startDate, endDate, config, startTime, endTime);
 
     if (generated.length === 0) {
       return NextResponse.json(

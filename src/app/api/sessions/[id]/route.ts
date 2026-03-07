@@ -80,6 +80,7 @@ export async function PUT(
     where: { id },
     data: {
       ...(validation.data.title !== undefined && { title: validation.data.title || null }),
+      ...(validation.data.description !== undefined && { description: validation.data.description || null }),
       ...(validation.data.startDate && { startDate: new Date(validation.data.startDate) }),
       ...(validation.data.endDate !== undefined && {
         endDate: validation.data.endDate ? new Date(validation.data.endDate) : null,

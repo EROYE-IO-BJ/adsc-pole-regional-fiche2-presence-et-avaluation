@@ -31,6 +31,7 @@ enum SessionFrequency {
   WEEKLY
   MONTHLY
   CONFIGURABLE
+  CUSTOM
 }
 
 model Organization {
@@ -159,6 +160,7 @@ model Activity {
 model ActivitySession {
   id              String   @id @default(cuid())
   title           String?
+  description     String?  @db.Text
   startDate       DateTime
   endDate         DateTime?
   startTime       String?

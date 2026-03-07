@@ -2,37 +2,36 @@ import { z } from "zod";
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const timeSlotSchema = z.object({
-  startTime: z.string().regex(timeRegex, "Format HH:mm requis"),
-  endTime: z.string().regex(timeRegex, "Format HH:mm requis"),
-});
-
-const dayScheduleSchema = z
-  .record(z.string(), timeSlotSchema)
-  .refine((obj) => Object.keys(obj).length >= 1, {
-    message: "Au moins 1 jour doit être sélectionné",
+export const recurrenceConfigSchema = z
+  .object({
+    interval: z.number().int().min(1).max(99),
+    unit: z.enum(["day", "week", "month"]),
+    daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1).optional(),
+    endType: z.enum(["never", "on_date", "after_count"]),
+    endDate: z.string().optional(),
+    endCount: z.number().int().min(1).max(365).optional(),
   })
   .refine(
-    (obj) =>
-      Object.values(obj).every((slot) => slot.endTime > slot.startTime),
-    { message: "L'heure de fin doit être après l'heure de début pour chaque jour" }
+    (data) => {
+      if (data.unit === "week") return data.daysOfWeek !== undefined && data.daysOfWeek.length > 0;
+      return true;
+    },
+    { message: "Les jours de la semaine sont requis pour une récurrence hebdomadaire", path: ["daysOfWeek"] }
+  )
+  .refine(
+    (data) => {
+      if (data.endType === "on_date") return data.endDate !== undefined && data.endDate.length > 0;
+      return true;
+    },
+    { message: "La date de fin est requise", path: ["endDate"] }
+  )
+  .refine(
+    (data) => {
+      if (data.endType === "after_count") return data.endCount !== undefined && data.endCount > 0;
+      return true;
+    },
+    { message: "Le nombre d'occurrences est requis", path: ["endCount"] }
   );
-
-const weekDayScheduleSchema = dayScheduleSchema.refine(
-  (obj) => Object.keys(obj).every((k) => Number(k) >= 0 && Number(k) <= 6),
-  { message: "Les clés doivent être entre 0 et 6 (jours de la semaine)" }
-);
-
-const monthDayScheduleSchema = dayScheduleSchema.refine(
-  (obj) => Object.keys(obj).every((k) => Number(k) >= 1 && Number(k) <= 31),
-  { message: "Les clés doivent être entre 1 et 31 (jours du mois)" }
-);
-
-export const recurrenceConfigSchema = z.discriminatedUnion("mode", [
-  z.object({ mode: z.literal("DAILY"), daySchedule: weekDayScheduleSchema }),
-  z.object({ mode: z.literal("WEEKLY"), daySchedule: weekDayScheduleSchema }),
-  z.object({ mode: z.literal("MONTHLY"), daySchedule: monthDayScheduleSchema }),
-]);
 
 const sessionFrequencyEnum = z.enum([
   "UNIQUE",
@@ -40,6 +39,7 @@ const sessionFrequencyEnum = z.enum([
   "WEEKLY",
   "MONTHLY",
   "CONFIGURABLE",
+  "CUSTOM",
 ]);
 
 const activityBaseSchema = z.object({
@@ -55,6 +55,8 @@ const activityBaseSchema = z.object({
   programId: z.string().min(1, "Le programme est requis"),
   sessionFrequency: sessionFrequencyEnum.default("UNIQUE"),
   recurrenceConfig: recurrenceConfigSchema.optional(),
+  startTime: z.string().regex(timeRegex, "Format HH:mm requis").optional(),
+  endTime: z.string().regex(timeRegex, "Format HH:mm requis").optional(),
 });
 
 export const createActivitySchema = activityBaseSchema
@@ -73,12 +75,39 @@ export const createActivitySchema = activityBaseSchema
   )
   .refine(
     (data) => {
-      if (["DAILY", "WEEKLY", "MONTHLY"].includes(data.sessionFrequency)) {
+      if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(data.sessionFrequency)) {
         return data.recurrenceConfig !== undefined;
       }
       return true;
     },
     { message: "La configuration de récurrence est requise pour cette fréquence", path: ["recurrenceConfig"] }
+  )
+  .refine(
+    (data) => {
+      if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(data.sessionFrequency)) {
+        return data.startTime !== undefined && data.startTime.length > 0;
+      }
+      return true;
+    },
+    { message: "L'heure de début est requise pour les séances récurrentes", path: ["startTime"] }
+  )
+  .refine(
+    (data) => {
+      if (["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"].includes(data.sessionFrequency)) {
+        return data.endTime !== undefined && data.endTime.length > 0;
+      }
+      return true;
+    },
+    { message: "L'heure de fin est requise pour les séances récurrentes", path: ["endTime"] }
+  )
+  .refine(
+    (data) => {
+      if (data.startTime && data.endTime) {
+        return data.endTime > data.startTime;
+      }
+      return true;
+    },
+    { message: "L'heure de fin doit être après l'heure de début", path: ["endTime"] }
   );
 
 export const updateActivitySchema = activityBaseSchema.partial().refine(
