@@ -17,7 +17,7 @@ export async function GET() {
         role: { in: filterRoles },
         OR: [
           { role: Role.ADMIN },
-          { services: { some: { serviceId: { in: serviceIds } } } },
+          { userServices: { some: { serviceId: { in: serviceIds } } } },
           { intervenantActivities: { some: { serviceId: { in: serviceIds } } } },
         ],
       };

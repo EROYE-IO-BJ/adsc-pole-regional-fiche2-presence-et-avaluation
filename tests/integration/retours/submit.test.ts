@@ -116,4 +116,74 @@ describe("POST /api/retours", () => {
     const { status } = await parseResponse(res);
     expect(status).toBe(404);
   });
+
+  it("should default to FORMATION when feedbackType is omitted", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("POST", "/api/retours", {
+      body: {
+        overallRating: 4,
+        contentRating: 4,
+        organizationRating: 4,
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status, data } = await parseResponse(res);
+    expect(status).toBe(201);
+    expect(data.feedbackType).toBe("FORMATION");
+  });
+
+  it("should return 400 when FORMATION ratings are missing", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("POST", "/api/retours", {
+      body: {
+        feedbackType: "FORMATION",
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
+
+  it("should handle long comment text", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+    const longComment = "A".repeat(5000);
+
+    const req = createRequest("POST", "/api/retours", {
+      body: {
+        feedbackType: "FORMATION",
+        overallRating: 4,
+        contentRating: 4,
+        organizationRating: 4,
+        comment: longComment,
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status, data } = await parseResponse(res);
+    expect(status).toBe(201);
+    expect(data.comment).toBe(longComment);
+  });
+
+  it("should return 400 when SERVICE satisfactionRating is missing", async () => {
+    const activity = await createServiceActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("POST", "/api/retours", {
+      body: {
+        feedbackType: "SERVICE",
+        informationClarity: true,
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
 });

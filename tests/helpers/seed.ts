@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 
 export async function createFormationActivity(
   prisma: PrismaClient,
@@ -57,5 +57,81 @@ export async function createServiceActivity(
       },
     },
     include: { sessions: true },
+  });
+}
+
+export async function createTestAttendance(
+  prisma: PrismaClient,
+  activityId: string,
+  sessionId: string,
+  overrides?: Record<string, unknown>
+) {
+  return prisma.attendance.create({
+    data: {
+      firstName: "Test",
+      lastName: "Participant",
+      email: "test-participant@test.com",
+      activityId,
+      sessionId,
+      ...overrides,
+    },
+  });
+}
+
+export async function createTestFeedback(
+  prisma: PrismaClient,
+  activityId: string,
+  sessionId: string,
+  type: "FORMATION" | "SERVICE",
+  overrides?: Record<string, unknown>
+) {
+  const base =
+    type === "FORMATION"
+      ? {
+          feedbackType: "FORMATION",
+          overallRating: 4,
+          contentRating: 4,
+          organizationRating: 4,
+          wouldRecommend: true,
+        }
+      : {
+          feedbackType: "SERVICE",
+          satisfactionRating: 4,
+          informationClarity: true,
+        };
+
+  return prisma.feedback.create({
+    data: {
+      ...base,
+      activityId,
+      sessionId,
+      ...overrides,
+    },
+  });
+}
+
+export async function createTestRegistration(
+  prisma: PrismaClient,
+  userId: string,
+  activityId: string
+) {
+  return prisma.registration.create({
+    data: { userId, activityId },
+  });
+}
+
+export async function createTestInvitation(
+  prisma: PrismaClient,
+  senderId: string,
+  overrides?: Record<string, unknown>
+) {
+  return prisma.invitation.create({
+    data: {
+      email: "invite@test.com",
+      role: "INTERVENANT" as Role,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      senderId,
+      ...overrides,
+    },
   });
 }

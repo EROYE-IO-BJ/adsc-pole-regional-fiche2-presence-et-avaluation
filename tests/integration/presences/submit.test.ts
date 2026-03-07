@@ -149,4 +149,70 @@ describe("POST /api/presences", () => {
     const { status } = await parseResponse(res);
     expect(status).toBe(404);
   });
+
+  it("should return 400 when firstName is missing", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("POST", "/api/presences", {
+      body: {
+        lastName: "Diop",
+        email: "marie@test.com",
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
+
+  it("should return 400 when email is missing", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("POST", "/api/presences", {
+      body: {
+        firstName: "Marie",
+        lastName: "Diop",
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
+
+  it("should handle special characters in names", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("POST", "/api/presences", {
+      body: {
+        firstName: "Jean-François",
+        lastName: "O'Brien",
+        email: "jf@test.com",
+        accessToken: activity.accessToken,
+      },
+    });
+
+    const res = await POST(req);
+    const { status, data } = await parseResponse(res);
+
+    expect(status).toBe(201);
+    expect(data.firstName).toBe("Jean-François");
+    expect(data.lastName).toBe("O'Brien");
+  });
+
+  it("should return 400 when accessToken is missing", async () => {
+    const req = createRequest("POST", "/api/presences", {
+      body: {
+        firstName: "Marie",
+        lastName: "Diop",
+        email: "marie@test.com",
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
 });

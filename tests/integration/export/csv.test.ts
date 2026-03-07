@@ -143,4 +143,54 @@ describe("GET /api/activites/[id]/export", () => {
     const disposition = res.headers.get("content-disposition") || "";
     expect(disposition).toContain("Formation-IA-Avancée");
   });
+
+  it("should return 401 when not authenticated", async () => {
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("GET", `/api/activites/${activity.id}/export`, {
+      searchParams: { type: "attendances", format: "csv" },
+    });
+    const ctx = await createParams({ id: activity.id });
+
+    const res = await GET(req, ctx);
+    expect(res.status).toBe(401);
+  });
+
+  it("should return 404 for non-existent activity", async () => {
+    mockAuthUser(users.admin);
+
+    const req = createRequest("GET", "/api/activites/non-existent/export", {
+      searchParams: { type: "attendances", format: "csv" },
+    });
+    const ctx = await createParams({ id: "non-existent" });
+
+    const res = await GET(req, ctx);
+    expect(res.status).toBe(404);
+  });
+
+  it("RESPONSABLE should access their service's export", async () => {
+    mockAuthUser(users.responsable);
+    const activity = await createFormationActivity(prisma, users.service.id, users.admin.id, users.program.id);
+
+    const req = createRequest("GET", `/api/activites/${activity.id}/export`, {
+      searchParams: { type: "attendances", format: "csv" },
+    });
+    const ctx = await createParams({ id: activity.id });
+
+    const res = await GET(req, ctx);
+    expect(res.status).toBe(200);
+  });
+
+  it("RESPONSABLE should get 403 for another service's export", async () => {
+    mockAuthUser(users.responsable);
+    const activity = await createFormationActivity(prisma, users.service2.id, users.admin.id, users.program2.id);
+
+    const req = createRequest("GET", `/api/activites/${activity.id}/export`, {
+      searchParams: { type: "attendances", format: "csv" },
+    });
+    const ctx = await createParams({ id: activity.id });
+
+    const res = await GET(req, ctx);
+    expect(res.status).toBe(403);
+  });
 });

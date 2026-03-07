@@ -147,6 +147,118 @@ describe("POST /api/activites", () => {
     const { status } = await parseResponse(res);
     expect(status).toBe(400);
   });
+
+  it("should return 400 when endDate < startDate", async () => {
+    mockAuthUser(users.admin);
+
+    const req = createRequest("POST", "/api/activites", {
+      body: {
+        title: "Invalid Dates",
+        startDate: "2025-08-01",
+        endDate: "2025-07-01",
+        type: "FORMATION",
+        serviceId: users.service.id,
+        programId: users.program.id,
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
+
+  it("should set createdById to the authenticated user", async () => {
+    mockAuthUser(users.admin);
+
+    const req = createRequest("POST", "/api/activites", {
+      body: {
+        title: "Test CreatedBy",
+        startDate: "2025-07-01",
+        endDate: "2025-08-01",
+        type: "FORMATION",
+        serviceId: users.service.id,
+        programId: users.program.id,
+      },
+    });
+
+    const res = await POST(req);
+    const { data } = await parseResponse(res);
+
+    const activity = await prisma.activity.findUnique({ where: { id: data.id } });
+    expect(activity!.createdById).toBe(users.admin.id);
+  });
+
+  it("INTERVENANT should only see their assigned activities in GET list", async () => {
+    mockAuthUser(users.admin);
+    // Create 2 activities, one assigned to intervenant
+    await prisma.activity.create({
+      data: {
+        title: "Assigned",
+        startDate: new Date(),
+        endDate: new Date(),
+        serviceId: users.service.id,
+        programId: users.program.id,
+        createdById: users.admin.id,
+        intervenantId: users.intervenant.id,
+        sessions: { create: { startDate: new Date(), isDefault: true } },
+      },
+    });
+    await prisma.activity.create({
+      data: {
+        title: "Not Assigned",
+        startDate: new Date(),
+        endDate: new Date(),
+        serviceId: users.service.id,
+        programId: users.program.id,
+        createdById: users.admin.id,
+        sessions: { create: { startDate: new Date(), isDefault: true } },
+      },
+    });
+
+    mockAuthUser(users.intervenant);
+    const res = await GET();
+    const { status, data } = await parseResponse(res);
+
+    expect(status).toBe(200);
+    expect(data.length).toBe(1);
+    expect(data[0].title).toBe("Assigned");
+  });
+
+  it("PARTICIPANT should only see ACTIVE activities", async () => {
+    mockAuthUser(users.admin);
+    await prisma.activity.create({
+      data: {
+        title: "Active Activity",
+        startDate: new Date(),
+        endDate: new Date(),
+        status: "ACTIVE",
+        serviceId: users.service.id,
+        programId: users.program.id,
+        createdById: users.admin.id,
+        sessions: { create: { startDate: new Date(), isDefault: true } },
+      },
+    });
+    await prisma.activity.create({
+      data: {
+        title: "Draft Activity",
+        startDate: new Date(),
+        endDate: new Date(),
+        status: "DRAFT",
+        serviceId: users.service.id,
+        programId: users.program.id,
+        createdById: users.admin.id,
+        sessions: { create: { startDate: new Date(), isDefault: true } },
+      },
+    });
+
+    mockAuthUser(users.participant);
+    const res = await GET();
+    const { status, data } = await parseResponse(res);
+
+    expect(status).toBe(200);
+    expect(data.length).toBe(1);
+    expect(data[0].title).toBe("Active Activity");
+  });
 });
 
 describe("GET /api/activites", () => {

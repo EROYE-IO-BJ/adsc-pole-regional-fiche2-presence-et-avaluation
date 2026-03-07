@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { POST } from "@/app/api/auth/register/route";
 import { createRequest, parseResponse } from "../../helpers/api";
 import { prisma } from "../../helpers/prisma";
+import bcrypt from "bcryptjs";
 
 describe("POST /api/auth/register", () => {
   it("should register a new user as PARTICIPANT with email verified", async () => {
@@ -72,6 +73,71 @@ describe("POST /api/auth/register", () => {
         email: "jean@test.com",
         password: "password123",
         confirmPassword: "different456",
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
+
+  it("should hash password with bcrypt", async () => {
+    const req = createRequest("POST", "/api/auth/register", {
+      body: {
+        name: "Hash Test",
+        email: "hashtest@test.com",
+        password: "password123",
+        confirmPassword: "password123",
+      },
+    });
+
+    await POST(req);
+
+    const user = await prisma.user.findUnique({ where: { email: "hashtest@test.com" } });
+    expect(user!.password).not.toBe("password123");
+    const isValid = await bcrypt.compare("password123", user!.password!);
+    expect(isValid).toBe(true);
+  });
+
+  it("should handle special characters in name", async () => {
+    const req = createRequest("POST", "/api/auth/register", {
+      body: {
+        name: "Jean-François O'Brien",
+        email: "jf@test.com",
+        password: "password123",
+        confirmPassword: "password123",
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(201);
+
+    const user = await prisma.user.findUnique({ where: { email: "jf@test.com" } });
+    expect(user!.name).toBe("Jean-François O'Brien");
+  });
+
+  it("should return 400 for invalid email format", async () => {
+    const req = createRequest("POST", "/api/auth/register", {
+      body: {
+        name: "Test",
+        email: "not-an-email",
+        password: "password123",
+        confirmPassword: "password123",
+      },
+    });
+
+    const res = await POST(req);
+    const { status } = await parseResponse(res);
+    expect(status).toBe(400);
+  });
+
+  it("should return 400 for missing name", async () => {
+    const req = createRequest("POST", "/api/auth/register", {
+      body: {
+        email: "test@test.com",
+        password: "password123",
+        confirmPassword: "password123",
       },
     });
 
