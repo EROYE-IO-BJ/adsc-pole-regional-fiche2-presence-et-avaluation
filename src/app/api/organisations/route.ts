@@ -1,29 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireAdmin, handleAuthError } from "@/lib/authorization";
-import { createDepartmentSchema } from "@/lib/validations/department";
+import { requireAdmin, handleAuthError } from "@/lib/authorization";
+import { createOrganizationSchema } from "@/lib/validations/organization";
 
-// GET /api/departments - List all departments
+// GET /api/organisations - List all organisations (Admin only)
 export async function GET() {
   try {
-    await requireAuth();
+    await requireAdmin();
   } catch (error) {
     const { error: msg, status } = handleAuthError(error);
     return NextResponse.json({ error: msg }, { status });
   }
 
-  const departments = await prisma.department.findMany({
+  const organisations = await prisma.organization.findMany({
     orderBy: { name: "asc" },
     include: {
-      organization: { select: { id: true, name: true } },
-      _count: { select: { services: true, programs: true } },
+      _count: { select: { departments: true } },
     },
   });
 
-  return NextResponse.json(departments);
+  return NextResponse.json(organisations);
 }
 
-// POST /api/departments - Create a new department (Admin only)
+// POST /api/organisations - Create a new organisation (Admin only)
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin();
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const validation = createDepartmentSchema.safeParse(body);
+  const validation = createOrganizationSchema.safeParse(body);
 
   if (!validation.success) {
     return NextResponse.json(
@@ -49,28 +48,24 @@ export async function POST(request: NextRequest) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-  const existing = await prisma.department.findFirst({
-    where: {
-      organizationId: validation.data.organizationId,
-      name: validation.data.name,
-    },
+  const existing = await prisma.organization.findFirst({
+    where: { OR: [{ name: validation.data.name }, { slug }] },
   });
 
   if (existing) {
     return NextResponse.json(
-      { error: "Un département avec ce nom existe déjà dans cette organisation" },
+      { error: "Une organisation avec ce nom existe déjà" },
       { status: 409 }
     );
   }
 
-  const department = await prisma.department.create({
+  const organisation = await prisma.organization.create({
     data: {
       name: validation.data.name,
       slug,
       description: validation.data.description || null,
-      organizationId: validation.data.organizationId,
     },
   });
 
-  return NextResponse.json(department, { status: 201 });
+  return NextResponse.json(organisation, { status: 201 });
 }

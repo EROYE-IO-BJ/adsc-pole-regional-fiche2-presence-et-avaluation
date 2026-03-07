@@ -15,6 +15,8 @@ import {
   History,
   ClipboardList,
   FolderKanban,
+  Landmark,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,6 +35,8 @@ function getNavigation(role: string): NavItem[] {
         { name: "Tableau de bord", href: "/tableau-de-bord", icon: LayoutDashboard },
         { name: "Activités", href: "/activites", icon: CalendarDays },
         { name: "Nouvelle activité", href: "/activites/nouvelle", icon: Plus },
+        { name: "Organisations", href: "/admin/organisations", icon: Landmark },
+        { name: "Départements", href: "/admin/departements", icon: GitBranch },
         { name: "Services", href: "/admin/services", icon: Building2 },
         { name: "Programmes", href: "/admin/programmes", icon: FolderKanban },
         { name: "Utilisateurs", href: "/admin/utilisateurs", icon: Users },
