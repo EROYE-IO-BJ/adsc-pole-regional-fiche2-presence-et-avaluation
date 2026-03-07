@@ -7,15 +7,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { ServiceFilter } from "@/components/dashboard/service-filter";
+import { ProgramFilter } from "@/components/dashboard/program-filter";
+import { UserFilter } from "@/components/dashboard/user-filter";
 import { ServiceKPITable } from "@/components/dashboard/service-kpi-table";
 import { Role } from "@prisma/client";
 
 interface DashboardPageProps {
-  searchParams: Promise<{ serviceId?: string }>;
+  searchParams: Promise<{ serviceId?: string; programId?: string; userId?: string }>;
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const { serviceId } = await searchParams;
+  const { serviceId, programId, userId: filterUserId } = await searchParams;
   const session = await auth();
   const userRole = session?.user?.role;
   const userId = session?.user?.id;
@@ -33,6 +35,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Apply serviceId filter
   if (serviceId) {
     activityWhere.serviceId = serviceId;
+  }
+
+  // Apply programId filter
+  if (programId) {
+    activityWhere.programId = programId;
+  }
+
+  // Apply userId filter (intervenant OR creator)
+  if (filterUserId) {
+    activityWhere.AND = [
+      ...(activityWhere.AND || []),
+      { OR: [{ intervenantId: filterUserId }, { createdById: filterUserId }] },
+    ];
   }
 
   const [activitiesCount, attendancesCount, feedbacksCount, recentActivities, recommendCount] =
@@ -133,8 +148,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         )}
       </div>
 
-      {/* Service Filter */}
-      <ServiceFilter />
+      {/* Filters */}
+      <div className="flex gap-4 flex-wrap">
+        <ServiceFilter />
+        <ProgramFilter />
+        <UserFilter />
+      </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -159,7 +178,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <ServiceKPITable />
 
       {/* Charts */}
-      <DashboardCharts serviceId={serviceId} />
+      <DashboardCharts serviceId={serviceId} programId={programId} userId={filterUserId} />
 
       {/* Recent Activities */}
       <Card>

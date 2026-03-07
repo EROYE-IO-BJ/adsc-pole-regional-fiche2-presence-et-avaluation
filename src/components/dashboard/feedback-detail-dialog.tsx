@@ -37,6 +37,8 @@ interface FeedbackDetailDialogProps {
   filter: string;
   value: string;
   serviceId?: string;
+  programId?: string;
+  userId?: string;
 }
 
 export function FeedbackDetailDialog({
@@ -46,6 +48,8 @@ export function FeedbackDetailDialog({
   filter,
   value,
   serviceId,
+  programId,
+  userId,
 }: FeedbackDetailDialogProps) {
   const [feedbacks, setFeedbacks] = useState<FeedbackDetail[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,13 +59,15 @@ export function FeedbackDetailDialog({
     setLoading(true);
     const params = new URLSearchParams({ filter, value });
     if (serviceId) params.set("serviceId", serviceId);
+    if (programId) params.set("programId", programId);
+    if (userId) params.set("userId", userId);
     fetch(`/api/dashboard/feedback-details?${params}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setFeedbacks(data);
       })
       .finally(() => setLoading(false));
-  }, [open, filter, value, serviceId]);
+  }, [open, filter, value, serviceId, programId, userId]);
 
   function getRating(f: FeedbackDetail) {
     return f.overallRating || f.satisfactionRating;

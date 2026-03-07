@@ -16,9 +16,11 @@ import { FeedbackDetailDialog } from "./feedback-detail-dialog";
 
 interface DashboardChartsProps {
   serviceId?: string;
+  programId?: string;
+  userId?: string;
 }
 
-export function DashboardCharts({ serviceId }: DashboardChartsProps) {
+export function DashboardCharts({ serviceId, programId, userId }: DashboardChartsProps) {
   const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,11 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
       setLoading(true);
       setError(null);
       try {
-        const params = serviceId ? `?serviceId=${serviceId}` : "";
+        const queryParams = new URLSearchParams();
+        if (serviceId) queryParams.set("serviceId", serviceId);
+        if (programId) queryParams.set("programId", programId);
+        if (userId) queryParams.set("userId", userId);
+        const params = queryParams.toString() ? `?${queryParams.toString()}` : "";
         const res = await fetch(`/api/dashboard/stats${params}`);
         if (!res.ok) throw new Error("Erreur lors du chargement");
         const stats: DashboardStats = await res.json();
@@ -46,7 +52,7 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
       }
     }
     fetchStats();
-  }, [serviceId]);
+  }, [serviceId, programId, userId]);
 
   function openFeedbackDialog(title: string, filter: string, value: string) {
     setDialogState({ open: true, title, filter, value });
@@ -143,6 +149,8 @@ export function DashboardCharts({ serviceId }: DashboardChartsProps) {
         filter={dialogState.filter}
         value={dialogState.value}
         serviceId={serviceId}
+        programId={programId}
+        userId={userId}
       />
     </div>
   );

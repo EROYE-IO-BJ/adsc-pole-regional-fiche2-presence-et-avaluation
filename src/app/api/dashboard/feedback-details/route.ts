@@ -29,6 +29,21 @@ export async function GET(request: NextRequest) {
       activityWhere.serviceId = serviceId;
     }
 
+    // Apply programId filter
+    const programId = request.nextUrl.searchParams.get("programId");
+    if (programId) {
+      activityWhere.programId = programId;
+    }
+
+    // Apply userId filter (intervenant OR creator)
+    const userId = request.nextUrl.searchParams.get("userId");
+    if (userId) {
+      activityWhere.AND = [
+        ...(activityWhere.AND || []),
+        { OR: [{ intervenantId: userId }, { createdById: userId }] },
+      ];
+    }
+
     const filter = request.nextUrl.searchParams.get("filter");
     const value = request.nextUrl.searchParams.get("value");
 

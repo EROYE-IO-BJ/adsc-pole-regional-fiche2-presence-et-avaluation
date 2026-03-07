@@ -28,6 +28,21 @@ export async function GET(request: NextRequest) {
       activityWhere.serviceId = serviceId;
     }
 
+    // Apply programId filter
+    const programId = request.nextUrl.searchParams.get("programId");
+    if (programId) {
+      activityWhere.programId = programId;
+    }
+
+    // Apply userId filter (intervenant OR creator)
+    const userId = request.nextUrl.searchParams.get("userId");
+    if (userId) {
+      activityWhere.AND = [
+        ...(activityWhere.AND || []),
+        { OR: [{ intervenantId: userId }, { createdById: userId }] },
+      ];
+    }
+
     const feedbackWhere = { activity: activityWhere };
     const attendanceWhere = { activity: activityWhere };
 
@@ -155,7 +170,7 @@ async function getServiceActivity(activityWhere: any) {
     select: {
       name: true,
       activities: {
-        where: activityWhere.serviceId ? { serviceId: activityWhere.serviceId } : activityWhere,
+        where: activityWhere,
         select: {
           _count: { select: { attendances: true, feedbacks: true } },
         },
@@ -178,7 +193,7 @@ async function getServiceSatisfaction(activityWhere: any) {
     select: {
       name: true,
       activities: {
-        where: activityWhere.serviceId ? { serviceId: activityWhere.serviceId } : activityWhere,
+        where: activityWhere,
         select: {
           feedbacks: {
             select: { overallRating: true, satisfactionRating: true },
@@ -211,7 +226,7 @@ async function getTopPrograms(activityWhere: any) {
       name: true,
       service: { select: { name: true } },
       activities: {
-        where: activityWhere.serviceId ? { serviceId: activityWhere.serviceId } : activityWhere,
+        where: activityWhere,
         select: {
           _count: { select: { attendances: true } },
           feedbacks: { select: { overallRating: true, satisfactionRating: true } },
